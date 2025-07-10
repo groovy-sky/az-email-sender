@@ -1,4 +1,4 @@
-package azemailsender
+package main
 
 import (
     "bytes"
