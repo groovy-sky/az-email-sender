@@ -46,6 +46,7 @@ type EmailSender struct {
 
 // New creates a new EmailSender client.
 func New(endpoint, accessKey string) *EmailSender {
+	fmt.Printf("[INF] Creating EmailSender with endpoint: %s\n", endpoint)
 	return &EmailSender{
 		Endpoint:   endpoint,
 		AccessKey:  accessKey,
@@ -55,33 +56,48 @@ func New(endpoint, accessKey string) *EmailSender {
 
 // SendEmail sends an email using Azure Communication Services Email REST API.
 func (s *EmailSender) SendEmail(req EmailRequest) (*EmailResponse, error) {
+	fmt.Printf("[INF] Preparing to send email from: %s\n", req.SenderAddress)
+	fmt.Printf("[INF] Email subject: %s\n", req.Content.Subject)
+	fmt.Printf("[INF] Email recipients: %+v\n", req.Recipients)
+
 	url := fmt.Sprintf("%s/emails:send?api-version=2023-03-31", s.Endpoint)
+	fmt.Printf("[INF] API URL: %s\n", url)
+
 	body, err := json.Marshal(req)
 	if err != nil {
+		fmt.Printf("[ERR] Failed to marshal request: %v\n", err)
 		return nil, err
 	}
+	fmt.Printf("[INF] Marshalled request body: %s\n", string(body))
 
 	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
+		fmt.Printf("[ERR] Failed to create HTTP request: %v\n", err)
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("api-key", s.AccessKey)
+	fmt.Printf("[INF] Set HTTP headers\n")
 
 	resp, err := s.HttpClient.Do(httpReq)
 	if err != nil {
+		fmt.Printf("[ERR] HTTP request failed: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
+	fmt.Printf("[INF] Received HTTP response with status: %s\n", resp.Status)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
+		fmt.Printf("[ERR] Email send failed. Status: %d, Body: %s\n", resp.StatusCode, string(b))
 		return nil, fmt.Errorf("failed to send email: %s", string(b))
 	}
 
 	var emailResp EmailResponse
 	if err := json.NewDecoder(resp.Body).Decode(&emailResp); err != nil {
+		fmt.Printf("[ERR] Failed to decode email response: %v\n", err)
 		return nil, err
 	}
+	fmt.Printf("[INF] Email sent successfully. MessageId: %s\n", emailResp.MessageId)
 	return &emailResp, nil
 }
