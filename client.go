@@ -26,12 +26,17 @@ func NewClient(endpoint, accessKey string, options *ClientOptions) *Client {
 	if options == nil {
 		options = DefaultClientOptions()
 	}
-	
+
+	// Ensure API version is set
+	if options.APIVersion == "" {
+		options.APIVersion = DefaultAPIVersion
+	}
+
 	// Ensure logger is set
 	if options.Logger == nil {
 		options.Logger = &noOpLogger{}
 	}
-	
+
 	client := &Client{
 		endpoint:   strings.TrimSuffix(endpoint, "/"),
 		accessKey:  accessKey,
@@ -42,7 +47,7 @@ func NewClient(endpoint, accessKey string, options *ClientOptions) *Client {
 			Timeout: options.HTTPTimeout,
 		},
 	}
-	
+
 	if client.options.Debug {
 		client.logger.Printf("[DEBUG] Client initialized with endpoint: %s", client.endpoint)
 		client.logger.Printf("[DEBUG] Authentication method: HMAC-SHA256")
@@ -50,7 +55,7 @@ func NewClient(endpoint, accessKey string, options *ClientOptions) *Client {
 		client.logger.Printf("[DEBUG] HTTP Timeout: %v", client.options.HTTPTimeout)
 		client.logger.Printf("[DEBUG] Max Retries: %d", client.options.MaxRetries)
 	}
-	
+
 	return client
 }
 
@@ -59,20 +64,25 @@ func NewClientFromConnectionString(connectionString string, options *ClientOptio
 	if options == nil {
 		options = DefaultClientOptions()
 	}
-	
+
+	// Ensure API version is set
+	if options.APIVersion == "" {
+		options.APIVersion = DefaultAPIVersion
+	}
+
 	parsed, err := parseConnectionString(connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse connection string: %w", err)
 	}
-	
+
 	client := NewClient(parsed.Endpoint, parsed.AccessKey, options)
 	client.authMethod = AuthMethodConnectionString
-	
+
 	if client.options.Debug {
 		client.logger.Printf("[DEBUG] Client created from connection string")
 		client.logger.Printf("[DEBUG] Parsed endpoint: %s", parsed.Endpoint)
 	}
-	
+
 	return client, nil
 }
 
@@ -81,14 +91,14 @@ func NewClientWithAccessKey(endpoint, accessKey string, options *ClientOptions) 
 	if options == nil {
 		options = DefaultClientOptions()
 	}
-	
+
 	client := NewClient(endpoint, accessKey, options)
 	client.authMethod = AuthMethodAccessKey
-	
+
 	if client.options.Debug {
 		client.logger.Printf("[DEBUG] Client created with access key authentication (legacy)")
 	}
-	
+
 	return client
 }
 
@@ -96,7 +106,7 @@ func NewClientWithAccessKey(endpoint, accessKey string, options *ClientOptions) 
 func parseConnectionString(connectionString string) (*ParsedConnectionString, error) {
 	parts := strings.Split(connectionString, ";")
 	parsed := &ParsedConnectionString{}
-	
+
 	for _, part := range parts {
 		if strings.HasPrefix(part, "endpoint=") {
 			parsed.Endpoint = strings.TrimPrefix(part, "endpoint=")
@@ -104,15 +114,15 @@ func parseConnectionString(connectionString string) (*ParsedConnectionString, er
 			parsed.AccessKey = strings.TrimPrefix(part, "accesskey=")
 		}
 	}
-	
+
 	if parsed.Endpoint == "" {
 		return nil, fmt.Errorf("endpoint not found in connection string")
 	}
-	
+
 	if parsed.AccessKey == "" {
 		return nil, fmt.Errorf("access key not found in connection string")
 	}
-	
+
 	return parsed, nil
 }
 
@@ -126,14 +136,14 @@ func (c *Client) generateHMACSignature(method, uri, host, dateHeader, body strin
 		c.logger.Printf("[DEBUG] Date: %s", dateHeader)
 		c.logger.Printf("[DEBUG] Body length: %d bytes", len(body))
 	}
-	
+
 	// Create string to sign
 	stringToSign := fmt.Sprintf("%s\n%s\n%s;%s;%s", method, uri, host, dateHeader, body)
-	
+
 	if c.options.Debug {
 		c.logger.Printf("[DEBUG] String to sign: %s", stringToSign)
 	}
-	
+
 	// Decode the access key
 	decodedKey, err := base64.StdEncoding.DecodeString(c.accessKey)
 	if err != nil {
@@ -142,16 +152,16 @@ func (c *Client) generateHMACSignature(method, uri, host, dateHeader, body strin
 		}
 		return ""
 	}
-	
+
 	// Create HMAC
 	h := hmac.New(sha256.New, decodedKey)
 	h.Write([]byte(stringToSign))
 	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
-	
+
 	if c.options.Debug {
 		c.logger.Printf("[DEBUG] Generated signature: %s", signature)
 	}
-	
+
 	return signature
 }
 
@@ -160,7 +170,7 @@ func (c *Client) addAuthentication(req *http.Request, body string) error {
 	if c.options.Debug {
 		c.logger.Printf("[DEBUG] Adding authentication headers (method: %v)", c.authMethod)
 	}
-	
+
 	switch c.authMethod {
 	case AuthMethodAccessKey:
 		// Legacy API key authentication
@@ -172,23 +182,23 @@ func (c *Client) addAuthentication(req *http.Request, body string) error {
 		// HMAC-SHA256 authentication
 		dateHeader := time.Now().UTC().Format(time.RFC1123)
 		req.Header.Set("Date", dateHeader)
-		
+
 		parsedURL, err := url.Parse(req.URL.String())
 		if err != nil {
 			return fmt.Errorf("failed to parse URL: %w", err)
 		}
-		
+
 		signature := c.generateHMACSignature(req.Method, parsedURL.Path+"?"+parsedURL.RawQuery, parsedURL.Host, dateHeader, body)
-		
+
 		authHeader := fmt.Sprintf("HMAC-SHA256 SignedHeaders=date;host;x-ms-content-sha256&Signature=%s", signature)
 		req.Header.Set("Authorization", authHeader)
-		
+
 		// Add content hash
 		h := sha256.New()
 		h.Write([]byte(body))
 		contentHash := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		req.Header.Set("x-ms-content-sha256", contentHash)
-		
+
 		if c.options.Debug {
 			c.logger.Printf("[DEBUG] Added HMAC-SHA256 authentication headers")
 			c.logger.Printf("[DEBUG] Authorization: %s", authHeader)
@@ -197,7 +207,7 @@ func (c *Client) addAuthentication(req *http.Request, body string) error {
 	default:
 		return fmt.Errorf("unsupported authentication method: %v", c.authMethod)
 	}
-	
+
 	return nil
 }
 

@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// DefaultAPIVersion is the default Azure Communication Services API version
+const DefaultAPIVersion = "2024-07-01-preview"
+
 // Logger interface for custom logging implementations
 type Logger interface {
 	Printf(format string, v ...interface{})
@@ -14,19 +17,19 @@ type Logger interface {
 type ClientOptions struct {
 	// Debug enables comprehensive debug logging
 	Debug bool
-	
+
 	// Logger is a custom logger implementation. If nil, uses standard log package
 	Logger Logger
-	
+
 	// HTTPTimeout sets the HTTP client timeout
 	HTTPTimeout time.Duration
-	
+
 	// APIVersion specifies the Azure Communication Services API version
 	APIVersion string
-	
+
 	// MaxRetries sets the maximum number of retry attempts for failed requests
 	MaxRetries int
-	
+
 	// RetryDelay sets the delay between retry attempts
 	RetryDelay time.Duration
 }
@@ -37,7 +40,7 @@ func DefaultClientOptions() *ClientOptions {
 		Debug:       false,
 		Logger:      log.Default(),
 		HTTPTimeout: 30 * time.Second,
-		APIVersion:  "2024-07-01-preview",
+		APIVersion:  DefaultAPIVersion,
 		MaxRetries:  3,
 		RetryDelay:  time.Second,
 	}
@@ -73,18 +76,18 @@ type EmailMessage struct {
 
 // SendResponse represents the response from sending an email
 type SendResponse struct {
-	ID          string `json:"id"`
-	Status      string `json:"status,omitempty"`
-	Error       *Error `json:"error,omitempty"`
-	Timestamp   time.Time
-	MessageID   string // Legacy field for backward compatibility
+	ID        string `json:"id"`
+	Status    string `json:"status,omitempty"`
+	Error     *Error `json:"error,omitempty"`
+	Timestamp time.Time
+	MessageID string // Legacy field for backward compatibility
 }
 
 // Error represents an error response from the Azure API
 type Error struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Target  string `json:"target,omitempty"`
+	Code    string  `json:"code"`
+	Message string  `json:"message"`
+	Target  string  `json:"target,omitempty"`
 	Details []Error `json:"details,omitempty"`
 }
 
@@ -100,13 +103,13 @@ type StatusResponse struct {
 type WaitOptions struct {
 	// PollInterval sets how often to check the status
 	PollInterval time.Duration
-	
+
 	// MaxWaitTime sets the maximum time to wait for completion
 	MaxWaitTime time.Duration
-	
+
 	// OnStatusUpdate is called each time the status is checked
 	OnStatusUpdate func(status *StatusResponse)
-	
+
 	// OnError is called when an error occurs during polling
 	OnError func(err error)
 }
@@ -129,11 +132,11 @@ func DefaultWaitOptions() *WaitOptions {
 type EmailStatus string
 
 const (
-	StatusQueued     EmailStatus = "Queued"
+	StatusQueued         EmailStatus = "Queued"
 	StatusOutForDelivery EmailStatus = "OutForDelivery"
-	StatusDelivered  EmailStatus = "Delivered"
-	StatusFailed     EmailStatus = "Failed"
-	StatusCanceled   EmailStatus = "Canceled"
+	StatusDelivered      EmailStatus = "Delivered"
+	StatusFailed         EmailStatus = "Failed"
+	StatusCanceled       EmailStatus = "Canceled"
 )
 
 // AuthMethod represents the authentication method
