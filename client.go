@@ -127,18 +127,19 @@ func parseConnectionString(connectionString string) (*ParsedConnectionString, er
 }
 
 // generateHMACSignature generates HMAC-SHA256 signature for Azure API authentication
-func (c *Client) generateHMACSignature(method, uri, host, dateHeader, body string) string {
+func (c *Client) generateHMACSignature(method, uri, host, dateHeader, contentHash string) string {
 	if c.options.Debug {
 		c.logger.Printf("[DEBUG] Generating HMAC signature")
 		c.logger.Printf("[DEBUG] Method: %s", method)
 		c.logger.Printf("[DEBUG] URI: %s", uri)
 		c.logger.Printf("[DEBUG] Host: %s", host)
 		c.logger.Printf("[DEBUG] Date: %s", dateHeader)
-		c.logger.Printf("[DEBUG] Body length: %d bytes", len(body))
+		c.logger.Printf("[DEBUG] Content hash: %s", contentHash)
 	}
 
-	// Create string to sign
-	stringToSign := fmt.Sprintf("%s\n%s\n%s;%s;%s", method, uri, host, dateHeader, body)
+	// Create string to sign according to Azure Communication Services format
+	// Format: HTTP_METHOD + "\n" + path_and_query + "\n" + date + ";" + host + ";" + content-hash
+	stringToSign := fmt.Sprintf("%s\n%s\n%s;%s;%s", method, uri, dateHeader, host, contentHash)
 
 	if c.options.Debug {
 		c.logger.Printf("[DEBUG] String to sign: %s", stringToSign)
@@ -189,16 +190,21 @@ func (c *Client) addAuthentication(req *http.Request, body string) error {
 			return fmt.Errorf("failed to parse URL: %w", err)
 		}
 
-		signature := c.generateHMACSignature(req.Method, parsedURL.Path+"?"+parsedURL.RawQuery, parsedURL.Host, dateHeader, body)
-
-		authHeader := fmt.Sprintf("HMAC-SHA256 SignedHeaders=date;host;x-ms-content-sha256&Signature=%s", signature)
-		req.Header.Set("Authorization", authHeader)
-
-		// Add content hash
+		// Calculate content hash first
 		h := sha256.New()
 		h.Write([]byte(body))
 		contentHash := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		req.Header.Set("x-ms-content-sha256", contentHash)
+
+		// Generate signature with the content hash
+		pathAndQuery := parsedURL.Path
+		if parsedURL.RawQuery != "" {
+			pathAndQuery += "?" + parsedURL.RawQuery
+		}
+		signature := c.generateHMACSignature(req.Method, pathAndQuery, parsedURL.Host, dateHeader, contentHash)
+
+		authHeader := fmt.Sprintf("HMAC-SHA256 SignedHeaders=date;host;x-ms-content-sha256&Signature=%s", signature)
+		req.Header.Set("Authorization", authHeader)
 
 		if c.options.Debug {
 			c.logger.Printf("[DEBUG] Added HMAC-SHA256 authentication headers")
