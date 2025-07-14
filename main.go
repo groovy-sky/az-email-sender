@@ -39,18 +39,18 @@ type EmailResponse struct {
 
 // EmailSender is the main client for sending emails via Azure Communication Services Email REST API.
 type EmailSender struct {
-	Endpoint    string
-	AccessToken string
-	HttpClient  *http.Client
+	Endpoint   string
+	AccessKey  string
+	HttpClient *http.Client
 }
 
 // New creates a new EmailSender client.
-func New(endpoint, accessToken string) *EmailSender {
+func New(endpoint, accessKey string) *EmailSender {
 	fmt.Printf("[INF] Creating EmailSender with endpoint: %s\n", endpoint)
 	return &EmailSender{
-		Endpoint:    endpoint,
-		AccessToken: accessToken,
-		HttpClient:  &http.Client{Timeout: 15 * time.Second},
+		Endpoint:   endpoint,
+		AccessKey:  accessKey,
+		HttpClient: &http.Client{Timeout: 15 * time.Second},
 	}
 }
 
@@ -60,8 +60,8 @@ func (s *EmailSender) SendEmail(req EmailRequest) (*EmailResponse, error) {
 	fmt.Printf("[INF] Email subject: %s\n", req.Content.Subject)
 	fmt.Printf("[INF] Email recipients: %+v\n", req.Recipients)
 
-	// Correct URL format: /<api-version>/communications/send
-	url := fmt.Sprintf("%s/2023-03-31/communications/send", s.Endpoint)
+	// Correct URL format as per official documentation
+	url := fmt.Sprintf("%s/emails:send?api-version=2023-03-31", s.Endpoint)
 	fmt.Printf("[INF] API URL: %s\n", url)
 
 	body, err := json.Marshal(req)
@@ -77,10 +77,9 @@ func (s *EmailSender) SendEmail(req EmailRequest) (*EmailResponse, error) {
 		return nil, err
 	}
 
-	// Set correct headers as per Azure Communication Services requirements
+	// Set headers exactly as shown in the official documentation
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.AccessToken))
-	httpReq.Header.Set("x-ms-content-type", "multipart/mixed")
+	httpReq.Header.Set("api-key", s.AccessKey)
 	fmt.Printf("[INF] Set HTTP headers\n")
 
 	resp, err := s.HttpClient.Do(httpReq)
