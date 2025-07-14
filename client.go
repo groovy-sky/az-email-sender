@@ -180,7 +180,8 @@ func (c *Client) addAuthentication(req *http.Request, body string) error {
 		}
 	case AuthMethodHMAC, AuthMethodConnectionString:
 		// HMAC-SHA256 authentication
-		dateHeader := time.Now().UTC().Format(time.RFC1123)
+		// Azure expects RFC1123 format: "Mon, 02 Jan 2006 15:04:05 GMT"
+		dateHeader := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 		req.Header.Set("Date", dateHeader)
 
 		parsedURL, err := url.Parse(req.URL.String())
