@@ -7,6 +7,11 @@
 *.test
 *.out
 
+# Example binaries
+example/example
+example/simple/simple
+example/debug-only/debug-only
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.coverprofile
 
