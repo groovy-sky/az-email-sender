@@ -7,6 +7,11 @@
 *.test
 *.out
 
+# CLI build artifacts
+dist/
+azemailsender-cli
+azemailsender-cli-*
+
 # Example binaries
 example/example
 example/simple/simple
