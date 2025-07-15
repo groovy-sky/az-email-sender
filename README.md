@@ -2,6 +2,10 @@
 
 A comprehensive Go library for sending emails using Azure Communication Services Email API with extensive debug support and HMAC-SHA256 authentication.
 
+## CLI Tool
+
+This repository also includes a simple command-line interface (CLI) tool that wraps the library for easy email sending from the command line or scripts.
+
 ## Features
 
 - **HTTP-based email sending** using Azure Communication Services REST API
@@ -30,9 +34,80 @@ go get github.com/groovy-sky/azemailsender
 - Azure Communication Services resource with Email enabled
 - No external dependencies beyond Go standard library
 
-## Quick Start
+## CLI Installation and Usage
 
-### Basic Usage
+### Installation
+
+Download the pre-built binary for your platform from the releases page, or build from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/groovy-sky/azemailsender
+cd azemailsender
+
+# Build for your platform
+make dev
+
+# Or build for all platforms
+make build
+
+# Install locally
+make install
+```
+
+### CLI Configuration
+
+The CLI tool requires three environment variables:
+
+```bash
+export AZURE_EMAIL_ENDPOINT="https://your-resource.communication.azure.com"
+export AZURE_EMAIL_ACCESS_KEY="your-access-key"
+export AZURE_EMAIL_FROM="sender@yourdomain.com"
+```
+
+### CLI Usage
+
+```bash
+# Basic usage
+azemailsender --to "user@example.com" --subject "Hello" --body "This is a test message"
+
+# Pipe body content from command output
+echo "Hello World" | azemailsender --to "user@example.com" --subject "Greeting"
+
+# Read body from file
+cat message.txt | azemailsender --to "user@example.com" --subject "File Content"
+
+# Subject extracted from body (first line starting with "Subject: ")
+azemailsender --to "user@example.com" --body "Subject: Important Message
+This is the email content that will be sent."
+
+# PowerShell usage
+echo "Hello from PowerShell" | azemailsender --to "user@example.com"
+
+# Using in scripts
+if azemailsender --to "admin@example.com" --subject "Alert" --body "System issue detected"; then
+    echo "Alert sent successfully"
+else
+    echo "Failed to send alert"
+fi
+```
+
+### CLI Options
+
+- `--to` (required) - Email recipient address
+- `--body` (optional) - Email body content. If not provided, reads from stdin
+- `--subject` (optional) - Email subject line. If not provided and body starts with "Subject: ", extracts from first line
+
+### Exit Codes
+
+- `0` - Success
+- `1` - Error (missing arguments, authentication failure, send failure)
+
+## Go Library Usage
+
+## Go Library Usage
+
+### Quick Start
 
 ```go
 package main

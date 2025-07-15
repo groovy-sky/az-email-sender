@@ -18,3 +18,9 @@ example/debug-only/debug-only
 # Dependency directories (remove the comment below to include it)
 vendor/
 oryxBuildBinary
+
+# Build directory
+build/
+
+# Development binary (in root directory only)
+/azemailsender
