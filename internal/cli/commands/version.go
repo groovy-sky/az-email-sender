@@ -5,7 +5,6 @@ import (
 
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewVersionCommand creates the version command
@@ -23,10 +22,11 @@ func NewVersionCommand(version, commit, date string) *cobra.Command {
 }
 
 func runVersion(cmd *cobra.Command, version, commit, date string) error {
-	// Get global flags
-	debug := viper.GetBool("debug")
-	quiet := viper.GetBool("quiet")
-	jsonOutput := viper.GetBool("json")
+	// Get flags from root command (persistent flags)
+	rootCmd := cmd.Root()
+	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
+	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
+	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 

@@ -2,8 +2,15 @@
 
 A comprehensive Go library for sending emails using Azure Communication Services Email API with extensive debug support and HMAC-SHA256 authentication.
 
+## 🚀 Now with CLI Tool!
+
+This library now includes **azemailsender-cli**, a command-line interface that makes it easy to send emails directly from Bash/PowerShell terminals. Perfect for automation, scripting, and integration workflows.
+
+**[📖 CLI Documentation](CLI.md)** | **[🔧 CLI Quick Start](#cli-quick-start)**
+
 ## Features
 
+### Go Library
 - **HTTP-based email sending** using Azure Communication Services REST API
 - **HMAC-SHA256 authentication** for Azure API with automatic signature generation
 - **Multiple authentication methods**: endpoint/access key, connection string, and legacy api-key
@@ -18,17 +25,81 @@ A comprehensive Go library for sending emails using Azure Communication Services
 - **Thread-safe client implementation**
 - **Configurable HTTP timeouts and retry logic**
 
+### CLI Tool
+- **Command-line email sending** with standard Unix patterns
+- **Multiple authentication methods** - endpoint/access key, connection string
+- **Flexible recipient management** - To, CC, BCC recipients with display names
+- **Content options** - Plain text, HTML, file input, stdin piping
+- **Configuration file support** - JSON config files for common settings
+- **Environment variable support** - Read credentials from environment
+- **Cross-platform compatibility** - Windows, Linux, macOS binaries
+- **JSON output** - Machine-readable output for scripting
+- **Status monitoring** - Check delivery status and wait for completion
+
 ## Installation
+
+### Go Library
 
 ```bash
 go get github.com/groovy-sky/azemailsender
 ```
 
+### CLI Tool
+
+**Download pre-built binaries:**
+- [Latest releases](https://github.com/groovy-sky/azemailsender/releases)
+
+**Install script:**
+```bash
+curl -sSL https://raw.githubusercontent.com/groovy-sky/azemailsender/main/scripts/install.sh | bash
+```
+
+**Build from source:**
+```bash
+git clone https://github.com/groovy-sky/azemailsender.git
+cd azemailsender
+make build
+# Binary will be in dist/azemailsender-cli
+```
+
+## CLI Quick Start
+
+```bash
+# Send a simple email
+azemailsender-cli send \
+  --endpoint "https://your-resource.communication.azure.com" \
+  --access-key "your-access-key" \
+  --from "sender@yourdomain.com" \
+  --to "recipient@example.com" \
+  --subject "Hello World" \
+  --text "This is a test email"
+
+# Use environment variables
+export AZURE_EMAIL_ENDPOINT="https://your-resource.communication.azure.com"
+export AZURE_EMAIL_ACCESS_KEY="your-access-key"
+export AZURE_EMAIL_FROM="sender@yourdomain.com"
+
+echo "Email content from stdin" | azemailsender-cli send \
+  --to "recipient@example.com" \
+  --subject "Test Email"
+
+# Send HTML email with multiple recipients
+azemailsender-cli send \
+  --from "sender@yourdomain.com" \
+  --to "user1@example.com" --to "user2@example.com" \
+  --cc "manager@example.com" \
+  --subject "Team Update" \
+  --html "<h1>Important Update</h1><p>Please review the attached information.</p>" \
+  --wait
+```
+
+For complete CLI documentation, see **[CLI.md](CLI.md)**.
+
 ## Requirements
 
 - Go 1.21 or later
 - Azure Communication Services resource with Email enabled
-- No external dependencies beyond Go standard library
+- No external dependencies beyond Go standard library (for library usage)
 
 ## Quick Start
 
@@ -280,6 +351,55 @@ options := &azemailsender.ClientOptions{
 ## Thread Safety
 
 The client is thread-safe and can be used concurrently from multiple goroutines. Each request is independent and doesn't share state.
+
+## CLI Tool
+
+The **azemailsender-cli** tool provides a command-line interface for the library, enabling:
+
+- **Shell scripting integration** - Easy automation and scripting
+- **Cross-platform support** - Windows, Linux, and macOS binaries
+- **Standard Unix patterns** - Stdin piping, exit codes, JSON output
+- **Configuration management** - Config files and environment variables
+- **Status monitoring** - Check delivery status and wait for completion
+
+### CLI Examples
+
+```bash
+# Basic email sending
+azemailsender-cli send --from sender@example.com --to user@example.com --subject "Test" --text "Hello"
+
+# Pipeline integration  
+generate-report | azemailsender-cli send --to team@company.com --subject "Daily Report" --html-file report.html
+
+# Automation with config
+azemailsender-cli config init
+azemailsender-cli send --to alerts@company.com --subject "System Alert" --text "Service is down"
+
+# JSON output for scripting
+result=$(azemailsender-cli send --to user@example.com --subject "Test" --text "Hello" --json)
+message_id=$(echo "$result" | jq -r '.id')
+```
+
+For complete CLI documentation, examples, and usage patterns, see **[CLI.md](CLI.md)**.
+
+## Building
+
+### Library Only
+```bash
+go build
+```
+
+### CLI Tool
+```bash
+# Build for current platform
+make build
+
+# Build for all platforms  
+make build-all
+
+# Install locally
+make install
+```
 
 ## License
 

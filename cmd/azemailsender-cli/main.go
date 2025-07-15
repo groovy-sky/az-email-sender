@@ -6,6 +6,7 @@ import (
 
 	"github.com/groovy-sky/azemailsender/internal/cli/commands"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -22,6 +23,13 @@ func main() {
 Supports multiple authentication methods, flexible recipient management,
 and both plain text and HTML email content.`,
 		SilenceUsage: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Bind flags to viper
+			viper.BindPFlag("config", cmd.PersistentFlags().Lookup("config"))
+			viper.BindPFlag("debug", cmd.PersistentFlags().Lookup("debug"))
+			viper.BindPFlag("quiet", cmd.PersistentFlags().Lookup("quiet"))
+			viper.BindPFlag("json", cmd.PersistentFlags().Lookup("json"))
+		},
 	}
 
 	// Global flags
