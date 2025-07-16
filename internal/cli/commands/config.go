@@ -8,7 +8,6 @@ import (
 	"github.com/groovy-sky/azemailsender/internal/cli/config"
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewConfigCommand creates the config command
@@ -91,10 +90,11 @@ Examples:
 }
 
 func runConfigInit(cmd *cobra.Command, path string) error {
-	// Get global flags
-	debug := viper.GetBool("debug")
-	quiet := viper.GetBool("quiet")
-	jsonOutput := viper.GetBool("json")
+	// Get flags from root command since these are persistent flags
+	rootCmd := cmd.Root()
+	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
+	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
+	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
@@ -120,10 +120,11 @@ func runConfigInit(cmd *cobra.Command, path string) error {
 }
 
 func runConfigShow(cmd *cobra.Command, args []string) error {
-	// Get global flags
-	debug := viper.GetBool("debug")
-	quiet := viper.GetBool("quiet")
-	jsonOutput := viper.GetBool("json")
+	// Get flags from root command since these are persistent flags
+	rootCmd := cmd.Root()
+	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
+	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
+	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
@@ -148,10 +149,11 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 }
 
 func runConfigEnv(cmd *cobra.Command, args []string) error {
-	// Get global flags
-	debug := viper.GetBool("debug")
-	quiet := viper.GetBool("quiet")
-	jsonOutput := viper.GetBool("json")
+	// Get flags from root command since these are persistent flags
+	rootCmd := cmd.Root()
+	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
+	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
+	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
@@ -161,6 +163,7 @@ func runConfigEnv(cmd *cobra.Command, args []string) error {
 			"AZURE_EMAIL_ACCESS_KEY":        "your-access-key",
 			"AZURE_EMAIL_CONNECTION_STRING": "endpoint=https://your-resource.communication.azure.com;accesskey=your-access-key",
 			"AZURE_EMAIL_FROM":              "sender@yourdomain.com",
+			"AZURE_EMAIL_REPLY_TO":          "reply@yourdomain.com",
 			"AZURE_EMAIL_DEBUG":             "false",
 			"AZURE_EMAIL_QUIET":             "false",
 			"AZURE_EMAIL_JSON":              "false",

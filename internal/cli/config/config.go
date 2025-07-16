@@ -12,12 +12,12 @@ import (
 type Config struct {
 	// Authentication
 	Endpoint         string `mapstructure:"endpoint"`
-	AccessKey        string `mapstructure:"access_key"`
-	ConnectionString string `mapstructure:"connection_string"`
+	AccessKey        string `mapstructure:"access-key"`
+	ConnectionString string `mapstructure:"connection-string"`
 
 	// Email settings
 	From    string `mapstructure:"from"`
-	ReplyTo string `mapstructure:"reply_to"`
+	ReplyTo string `mapstructure:"reply-to"`
 
 	// Output settings
 	Debug bool `mapstructure:"debug"`
@@ -26,8 +26,8 @@ type Config struct {
 
 	// Wait settings
 	Wait        bool   `mapstructure:"wait"`
-	PollInterval string `mapstructure:"poll_interval"`
-	MaxWaitTime  string `mapstructure:"max_wait_time"`
+	PollInterval string `mapstructure:"poll-interval"`
+	MaxWaitTime  string `mapstructure:"max-wait-time"`
 }
 
 // Load loads configuration from file, environment variables, and command line flags
@@ -39,13 +39,26 @@ func Load(configFile string) (*Config, error) {
 	v.SetDefault("quiet", false)
 	v.SetDefault("json", false)
 	v.SetDefault("wait", false)
-	v.SetDefault("poll_interval", "5s")
-	v.SetDefault("max_wait_time", "5m")
+	v.SetDefault("poll-interval", "5s")
+	v.SetDefault("max-wait-time", "5m")
 
 	// Environment variable setup
 	v.SetEnvPrefix("AZURE_EMAIL")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	v.AutomaticEnv()
+
+	// Bind environment variables explicitly for Unmarshal to work
+	v.BindEnv("endpoint", "AZURE_EMAIL_ENDPOINT")
+	v.BindEnv("access-key", "AZURE_EMAIL_ACCESS_KEY")
+	v.BindEnv("connection-string", "AZURE_EMAIL_CONNECTION_STRING")
+	v.BindEnv("from", "AZURE_EMAIL_FROM")
+	v.BindEnv("reply-to", "AZURE_EMAIL_REPLY_TO")
+	v.BindEnv("debug", "AZURE_EMAIL_DEBUG")
+	v.BindEnv("quiet", "AZURE_EMAIL_QUIET")
+	v.BindEnv("json", "AZURE_EMAIL_JSON")
+	v.BindEnv("wait", "AZURE_EMAIL_WAIT")
+	v.BindEnv("poll-interval", "AZURE_EMAIL_POLL_INTERVAL")
+	v.BindEnv("max-wait-time", "AZURE_EMAIL_MAX_WAIT_TIME")
 
 	// Load configuration file if specified
 	if configFile != "" {
@@ -77,14 +90,15 @@ func Load(configFile string) (*Config, error) {
 func SaveDefaultConfig(path string) error {
 	defaultConfig := `{
   "endpoint": "https://your-resource.communication.azure.com",
-  "access_key": "your-access-key",
+  "access-key": "your-access-key",
   "from": "sender@yourdomain.com",
+  "reply-to": "",
   "debug": false,
   "quiet": false,
   "json": false,
   "wait": false,
-  "poll_interval": "5s",
-  "max_wait_time": "5m"
+  "poll-interval": "5s",
+  "max-wait-time": "5m"
 }`
 
 	return os.WriteFile(path, []byte(defaultConfig), 0644)
@@ -96,6 +110,7 @@ func GetEnvConfigExample() string {
 export AZURE_EMAIL_ENDPOINT="https://your-resource.communication.azure.com"
 export AZURE_EMAIL_ACCESS_KEY="your-access-key"
 export AZURE_EMAIL_FROM="sender@yourdomain.com"
+export AZURE_EMAIL_REPLY_TO="reply@yourdomain.com"
 export AZURE_EMAIL_DEBUG="false"
 export AZURE_EMAIL_QUIET="false" 
 export AZURE_EMAIL_JSON="false"`
