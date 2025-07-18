@@ -100,7 +100,7 @@ func runStatus(cmd *cobra.Command, messageID string, opts *StatusOptions) error 
 	if opts.Wait {
 		// Wait for completion
 		formatter.PrintInfo("Waiting for email completion...")
-		
+
 		waitOptions := &azemailsender.WaitOptions{
 			PollInterval: opts.PollInterval,
 			MaxWaitTime:  opts.MaxWaitTime,

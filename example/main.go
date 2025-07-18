@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/groovy-sky/azemailsender"
 	"log"
 	"time"
-	"github.com/groovy-sky/azemailsender"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 		Subject("Test Email from Go").
 		PlainText("This is a test email sent via Azure Communication Services Email REST API.").
 		Build()
-	
+
 	if err != nil {
 		log.Fatalf("Failed to build message: %v", err)
 	}
@@ -54,7 +54,7 @@ func main() {
 			</html>
 		`).
 		Build()
-	
+
 	if err != nil {
 		log.Fatalf("Failed to build complex message: %v", err)
 	}
@@ -74,7 +74,7 @@ func main() {
 			fmt.Printf("Status update: %s\n", status.Status)
 		},
 	}
-	
+
 	finalStatus, err := client.WaitForCompletion(resp.ID, waitOptions)
 	if err != nil {
 		fmt.Printf("Status monitoring failed: %v\n", err)
@@ -89,14 +89,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create client from connection string: %v", err)
 	}
-	
+
 	connMessage, err := connClient.NewMessage().
 		From("sender@yourdomain.com").
 		To("recipient@example.com").
 		Subject("Connection String Test").
 		PlainText("This email was sent using connection string authentication.").
 		Build()
-	
+
 	if err != nil {
 		log.Fatalf("Failed to build connection string message: %v", err)
 	}

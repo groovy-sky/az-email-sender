@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"github.com/groovy-sky/azemailsender"
+	"log"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 		Subject("Simple Test Email").
 		PlainText("Hello, this is a simple test email!").
 		Build()
-	
+
 	if err != nil {
 		log.Fatalf("Failed to build message: %v", err)
 	}
@@ -29,6 +29,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Email failed: %v", err)
 	}
-	
+
 	fmt.Printf("Email sent successfully! ID: %s\n", resp.ID)
 }
