@@ -50,27 +50,10 @@ and both plain text and HTML email content.`)
 	// Add commands using new framework
 	app.AddCommand(commands.NewSimpleVersionCommand(version, commit, date))
 	app.AddCommand(commands.NewSimpleConfigCommand())
+	app.AddCommand(commands.NewSimpleStatusCommand())
+	app.AddCommand(commands.NewSimpleSendCommand())
 
-	// Placeholder commands (to be migrated)
-	app.AddCommand(&simplecli.Command{
-		Name:        "send",
-		Description: "Send an email",
-		Usage:       "send [flags]",
-		LongDesc:    "Send an email using Azure Communication Services.",
-		Run: func(ctx *simplecli.Context) error {
-			return fmt.Errorf("send command will be implemented in next step")
-		},
-	})
 
-	app.AddCommand(&simplecli.Command{
-		Name:        "status",
-		Description: "Check email status",
-		Usage:       "status <message-id>",
-		LongDesc:    "Check the status of a previously sent email.",
-		Run: func(ctx *simplecli.Context) error {
-			return fmt.Errorf("status command will be implemented in next step")
-		},
-	})
 
 	if err := app.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
