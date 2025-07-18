@@ -98,7 +98,6 @@ Examples:
 	cmd.Flags().DurationVar(&opts.MaxWaitTime, "max-wait-time", 5*time.Minute, "Maximum wait time (when --wait is used)")
 
 	// Required flags
-	cmd.MarkFlagRequired("from")
 	cmd.MarkFlagRequired("subject")
 
 	return cmd

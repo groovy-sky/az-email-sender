@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/groovy-sky/azemailsender/internal/cli/commands"
 	"github.com/spf13/cobra"
@@ -24,11 +25,21 @@ Supports multiple authentication methods, flexible recipient management,
 and both plain text and HTML email content.`,
 		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Configure viper for environment variables
+			viper.SetEnvPrefix("AZURE_EMAIL")
+			viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+			viper.AutomaticEnv()
+			
 			// Bind flags to viper
 			viper.BindPFlag("config", cmd.PersistentFlags().Lookup("config"))
 			viper.BindPFlag("debug", cmd.PersistentFlags().Lookup("debug"))
 			viper.BindPFlag("quiet", cmd.PersistentFlags().Lookup("quiet"))
 			viper.BindPFlag("json", cmd.PersistentFlags().Lookup("json"))
+			
+			// Bind environment variables for global flags
+			viper.BindEnv("debug", "AZURE_EMAIL_DEBUG")
+			viper.BindEnv("quiet", "AZURE_EMAIL_QUIET")
+			viper.BindEnv("json", "AZURE_EMAIL_JSON")
 		},
 	}
 
