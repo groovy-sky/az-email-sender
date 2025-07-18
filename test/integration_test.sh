@@ -69,6 +69,7 @@ done
 
 # Test 5: Config init command
 echo -e "\nTest 5: Config init command"
+rm -f "$TEST_CONFIG"  # Clean up any existing config file
 if $CLI_BINARY config init --path "$TEST_CONFIG" > /dev/null 2>&1; then
     test_pass "Config init command works"
     if [ -f "$TEST_CONFIG" ]; then
@@ -82,7 +83,7 @@ fi
 
 # Test 6: Config show command
 echo -e "\nTest 6: Config show command"
-if $CLI_BINARY config show --config "$TEST_CONFIG" > /dev/null 2>&1; then
+if $CLI_BINARY --config "$TEST_CONFIG" config show > /dev/null 2>&1; then
     test_pass "Config show command works"
 else
     test_fail "Config show command failed"
@@ -114,7 +115,7 @@ fi
 
 # Test 10: JSON output format
 echo -e "\nTest 10: JSON output format"
-if json_output=$($CLI_BINARY version --json 2>&1); then
+if json_output=$($CLI_BINARY --json version 2>&1); then
     if echo "$json_output" | grep -q '"version"'; then
         test_pass "JSON output format works"
     else
@@ -145,7 +146,7 @@ cat > "$TEST_CONFIG" << EOF
 EOF
 
 # Try to send with config (should use config values, fail on auth but show correct validation)
-if output=$($CLI_BINARY send --config "$TEST_CONFIG" --to "recipient@example.com" --subject "Test" --text "Test" 2>&1); then
+if output=$($CLI_BINARY --config "$TEST_CONFIG" send --to "recipient@example.com" --subject "Test" --text "Test" 2>&1); then
     test_info "Config file read successfully"
 else
     # Should fail due to invalid auth, but should have read config
