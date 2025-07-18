@@ -49,11 +49,10 @@ make build
 ### Basic Usage
 
 ```bash
-# Send a simple email
+# Send a simple email (sender address from AZURE_EMAIL_FROM environment variable)
 azemailsender-cli send \
   --endpoint "https://your-resource.communication.azure.com" \
   --access-key "your-access-key" \
-  --from "sender@yourdomain.com" \
   --to "recipient@example.com" \
   --subject "Hello World" \
   --text "This is a test email"
@@ -64,7 +63,6 @@ azemailsender-cli send \
 ```bash
 azemailsender-cli send \
   --connection-string "endpoint=https://your-resource.communication.azure.com;accesskey=your-access-key" \
-  --from "sender@yourdomain.com" \
   --to "recipient@example.com" \
   --subject "Hello World" \
   --text "This is a test email"
@@ -121,11 +119,11 @@ Send an email message.
 azemailsender-cli send [flags]
 ```
 
-**Required flags:**
-- `--from, -f` - Sender email address
-- `--subject, -s` - Email subject
+**Required:**
+- Email subject (`--subject` or `AZURE_EMAIL_SUBJECT`)
 - At least one recipient (`--to`, `--cc`, or `--bcc`)
 - Authentication (`--connection-string` OR `--endpoint` + `--access-key`)
+- Sender address (`AZURE_EMAIL_FROM` environment variable)
 
 **Content flags:**
 - `--text` - Plain text email content
@@ -152,20 +150,20 @@ azemailsender-cli send [flags]
 **Examples:**
 
 ```bash
-# Simple email
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World"
+# Simple email (sender address from AZURE_EMAIL_FROM environment variable)
+azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World"
 
 # HTML email with multiple recipients
-azemailsender-cli send --from sender@example.com --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
+azemailsender-cli send --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
 
 # Send email and wait for completion
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World" --wait
+azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World" --wait
 
 # Read content from stdin
-echo "Hello from stdin" | azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Stdin Test"
+echo "Hello from stdin" | azemailsender-cli send --to recipient@example.com --subject "Stdin Test"
 
 # Read content from file
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "File Test" --text-file message.txt
+azemailsender-cli send --to recipient@example.com --subject "File Test" --text-file message.txt
 ```
 
 ### status
@@ -343,11 +341,13 @@ Error: validation failed:
 #!/bin/bash
 # Send daily report
 
+# Set up environment variables
+export AZURE_EMAIL_FROM="reports@company.com"
+
 REPORT_FILE="/tmp/daily-report.html"
 generate_report > "$REPORT_FILE"
 
 azemailsender-cli send \
-  --from "reports@company.com" \
   --to "manager@company.com" \
   --cc "team@company.com" \
   --subject "Daily Report - $(date +%Y-%m-%d)" \
