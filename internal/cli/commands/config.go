@@ -7,31 +7,28 @@ import (
 
 	"github.com/groovy-sky/azemailsender/internal/cli/config"
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 )
 
 // NewConfigCommand creates the config command
-func NewConfigCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "config",
-		Short: "Manage configuration",
-		Long:  "Manage configuration files and environment variables for azemailsender-cli",
+func NewConfigCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "config",
+		Usage: "Manage configuration",
+		Description: "Manage configuration files and environment variables for azemailsender-cli",
+		Subcommands: []*cli.Command{
+			newConfigInitCommand(),
+			newConfigShowCommand(),
+			newConfigEnvCommand(),
+		},
 	}
-
-	cmd.AddCommand(newConfigInitCommand())
-	cmd.AddCommand(newConfigShowCommand())
-	cmd.AddCommand(newConfigEnvCommand())
-
-	return cmd
 }
 
-func newConfigInitCommand() *cobra.Command {
-	var path string
-
-	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Create a default configuration file",
-		Long: `Create a default configuration file.
+func newConfigInitCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "init",
+		Usage: "Create a default configuration file",
+		Description: `Create a default configuration file.
 
 Examples:
   # Create config in current directory
@@ -39,21 +36,26 @@ Examples:
 
   # Create config in specific location
   azemailsender-cli config init --path ~/.config/azemailsender/config.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConfigInit(cmd, path)
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "path",
+				Aliases: []string{"p"},
+				Usage:   "Path for the configuration file",
+				Value:   "./azemailsender.json",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			path := c.String("path")
+			return runConfigInit(c, path)
 		},
 	}
-
-	cmd.Flags().StringVarP(&path, "path", "p", "./azemailsender.json", "Path for the configuration file")
-
-	return cmd
 }
 
-func newConfigShowCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "show",
-		Short: "Show current configuration",
-		Long: `Show the current configuration loaded from files and environment variables.
+func newConfigShowCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "show",
+		Usage: "Show current configuration",
+		Description: `Show the current configuration loaded from files and environment variables.
 
 Examples:
   # Show current configuration
@@ -61,19 +63,17 @@ Examples:
 
   # Show configuration from specific file
   azemailsender-cli config show --config ~/.config/azemailsender/config.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConfigShow(cmd, args)
+		Action: func(c *cli.Context) error {
+			return runConfigShow(c)
 		},
 	}
-
-	return cmd
 }
 
-func newConfigEnvCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "env",
-		Short: "Show environment variable examples",
-		Long: `Show examples of environment variables that can be used for configuration.
+func newConfigEnvCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "env",
+		Usage: "Show environment variable examples",
+		Description: `Show examples of environment variables that can be used for configuration.
 
 Examples:
   # Show environment variable examples
@@ -81,20 +81,17 @@ Examples:
 
   # Save environment variables to file
   azemailsender-cli config env > .env`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConfigEnv(cmd, args)
+		Action: func(c *cli.Context) error {
+			return runConfigEnv(c)
 		},
 	}
-
-	return cmd
 }
 
-func runConfigInit(cmd *cobra.Command, path string) error {
-	// Get flags from root command since these are persistent flags
-	rootCmd := cmd.Root()
-	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
-	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
-	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
+func runConfigInit(c *cli.Context, path string) error {
+	// Get global flags
+	debug := c.Bool("debug")
+	quiet := c.Bool("quiet")
+	jsonOutput := c.Bool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
@@ -119,17 +116,16 @@ func runConfigInit(cmd *cobra.Command, path string) error {
 	return formatter.PrintSuccess("Configuration file created at %s", path)
 }
 
-func runConfigShow(cmd *cobra.Command, args []string) error {
-	// Get flags from root command since these are persistent flags
-	rootCmd := cmd.Root()
-	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
-	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
-	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
+func runConfigShow(c *cli.Context) error {
+	// Get global flags from parent context
+	debug := c.Bool("debug")
+	quiet := c.Bool("quiet")
+	jsonOutput := c.Bool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
 	// Load configuration
-	configFile, _ := cmd.Flags().GetString("config")
+	configFile := c.String("config")
 	cfg, err := config.Load(configFile)
 	if err != nil {
 		formatter.PrintError(fmt.Errorf("failed to load configuration: %w", err))
@@ -148,12 +144,11 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	return formatter.PrintConfig(displayConfig)
 }
 
-func runConfigEnv(cmd *cobra.Command, args []string) error {
-	// Get flags from root command since these are persistent flags
-	rootCmd := cmd.Root()
-	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
-	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
-	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
+func runConfigEnv(c *cli.Context) error {
+	// Get global flags
+	debug := c.Bool("debug")
+	quiet := c.Bool("quiet")
+	jsonOutput := c.Bool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 

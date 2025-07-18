@@ -7,7 +7,7 @@ import (
 	"github.com/groovy-sky/azemailsender"
 	"github.com/groovy-sky/azemailsender/internal/cli/config"
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 	"github.com/spf13/viper"
 )
 
@@ -30,13 +30,12 @@ type StatusOptions struct {
 }
 
 // NewStatusCommand creates the status command
-func NewStatusCommand() *cobra.Command {
-	opts := &StatusOptions{}
-
-	cmd := &cobra.Command{
-		Use:   "status <message-id>",
-		Short: "Check email status",
-		Long: `Check the status of a previously sent email.
+func NewStatusCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "status",
+		Usage:     "Check email status",
+		ArgsUsage: "<message-id>",
+		Description: `Check the status of a previously sent email.
 
 Examples:
   # Check status once
@@ -47,28 +46,68 @@ Examples:
 
   # Check status with custom polling interval
   azemailsender-cli status abc123def456 --wait --poll-interval 10s --max-wait-time 2m`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStatus(cmd, args[0], opts)
+		Flags: []cli.Flag{
+			// Authentication flags
+			&cli.StringFlag{
+				Name:    "endpoint",
+				Aliases: []string{"e"},
+				Usage:   "Azure Communication Services endpoint",
+				EnvVars: []string{"AZURE_EMAIL_ENDPOINT"},
+			},
+			&cli.StringFlag{
+				Name:    "access-key",
+				Aliases: []string{"k"},
+				Usage:   "Access key for authentication",
+				EnvVars: []string{"AZURE_EMAIL_ACCESS_KEY"},
+			},
+			&cli.StringFlag{
+				Name:    "connection-string",
+				Usage:   "Connection string for authentication",
+				EnvVars: []string{"AZURE_EMAIL_CONNECTION_STRING"},
+			},
+			// Behavior flags
+			&cli.BoolFlag{
+				Name:    "wait",
+				Aliases: []string{"w"},
+				Usage:   "Wait for email completion",
+			},
+			&cli.DurationFlag{
+				Name:  "poll-interval",
+				Usage: "Status polling interval (when --wait is used)",
+				Value: 5 * time.Second,
+			},
+			&cli.DurationFlag{
+				Name:  "max-wait-time",
+				Usage: "Maximum wait time (when --wait is used)",
+				Value: 5 * time.Minute,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if c.NArg() != 1 {
+				return fmt.Errorf("exactly one message ID required")
+			}
+			messageID := c.Args().First()
+			return runStatus(c, messageID)
 		},
 	}
-
-	// Authentication flags
-	cmd.Flags().StringVarP(&opts.Endpoint, "endpoint", "e", "", "Azure Communication Services endpoint")
-	cmd.Flags().StringVarP(&opts.AccessKey, "access-key", "k", "", "Access key for authentication")
-	cmd.Flags().StringVar(&opts.ConnectionString, "connection-string", "", "Connection string for authentication")
-
-	// Behavior flags
-	cmd.Flags().BoolVarP(&opts.Wait, "wait", "w", false, "Wait for email completion")
-	cmd.Flags().DurationVar(&opts.PollInterval, "poll-interval", 5*time.Second, "Status polling interval (when --wait is used)")
-	cmd.Flags().DurationVar(&opts.MaxWaitTime, "max-wait-time", 5*time.Minute, "Maximum wait time (when --wait is used)")
-
-	return cmd
 }
 
-func runStatus(cmd *cobra.Command, messageID string, opts *StatusOptions) error {
+func runStatus(c *cli.Context, messageID string) error {
+	// Create StatusOptions from context
+	opts := &StatusOptions{
+		Endpoint:         c.String("endpoint"),
+		AccessKey:        c.String("access-key"),
+		ConnectionString: c.String("connection-string"),
+		Wait:             c.Bool("wait"),
+		PollInterval:     c.Duration("poll-interval"),
+		MaxWaitTime:      c.Duration("max-wait-time"),
+		Debug:            c.Bool("debug"),
+		Quiet:            c.Bool("quiet"),
+		JSON:             c.Bool("json"),
+	}
+
 	// Load configuration
-	configFile, _ := cmd.Flags().GetString("config")
+	configFile := c.String("config")
 	cfg, err := config.Load(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
