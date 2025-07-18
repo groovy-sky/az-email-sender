@@ -23,7 +23,6 @@ type SendOptions struct {
 	ConnectionString string
 
 	// Email content
-	From     string
 	To       []string
 	Cc       []string
 	Bcc      []string
@@ -55,21 +54,26 @@ func NewSendCommand() *cobra.Command {
 		Short: "Send an email",
 		Long: `Send an email using Azure Communication Services.
 
+The sender email address must be specified using the AZURE_EMAIL_FROM environment variable.
+
 Examples:
+  # Set the sender email address using environment variable
+  export AZURE_EMAIL_FROM="sender@example.com"
+
   # Send a simple email
-  azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World"
+  azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World"
 
   # Send HTML email with multiple recipients
-  azemailsender-cli send --from sender@example.com --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
+  azemailsender-cli send --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
 
   # Send email and wait for completion
-  azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World" --wait
+  azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World" --wait
 
   # Read content from stdin
-  echo "Hello from stdin" | azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Stdin Test"
+  echo "Hello from stdin" | azemailsender-cli send --to recipient@example.com --subject "Stdin Test"
 
   # Read content from file
-  azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "File Test" --text-file message.txt`,
+  azemailsender-cli send --to recipient@example.com --subject "File Test" --text-file message.txt`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend(cmd, opts)
 		},
@@ -81,7 +85,6 @@ Examples:
 	cmd.Flags().StringVar(&opts.ConnectionString, "connection-string", "", "Connection string for authentication")
 
 	// Email content flags
-	cmd.Flags().StringVarP(&opts.From, "from", "f", "", "Sender email address")
 	cmd.Flags().StringSliceVarP(&opts.To, "to", "t", []string{}, "To recipients (can be repeated)")
 	cmd.Flags().StringSliceVar(&opts.Cc, "cc", []string{}, "CC recipients (can be repeated)")
 	cmd.Flags().StringSliceVar(&opts.Bcc, "bcc", []string{}, "BCC recipients (can be repeated)")
@@ -98,7 +101,6 @@ Examples:
 	cmd.Flags().DurationVar(&opts.MaxWaitTime, "max-wait-time", 5*time.Minute, "Maximum wait time (when --wait is used)")
 
 	// Required flags
-	cmd.MarkFlagRequired("from")
 	cmd.MarkFlagRequired("subject")
 
 	return cmd
@@ -204,9 +206,6 @@ func mergeOptions(opts *SendOptions, cfg *config.Config) error {
 	}
 
 	// Merge email settings
-	if opts.From == "" {
-		opts.From = cfg.From
-	}
 	if opts.ReplyTo == "" {
 		opts.ReplyTo = cfg.ReplyTo
 	}
@@ -234,9 +233,10 @@ func validateSendOptions(opts *SendOptions) error {
 		errors = append(errors, "at least one recipient required (--to, --cc, or --bcc)")
 	}
 
-	// Check sender
-	if opts.From == "" {
-		errors = append(errors, "sender address required (--from)")
+	// Check sender - must come from environment variable
+	fromEmail := os.Getenv("AZURE_EMAIL_FROM")
+	if fromEmail == "" {
+		errors = append(errors, "sender address required: set the AZURE_EMAIL_FROM environment variable")
 	}
 
 	// Check subject
@@ -320,8 +320,11 @@ func createEmailClient(opts *SendOptions) (*azemailsender.Client, error) {
 }
 
 func buildEmailMessage(client *azemailsender.Client, opts *SendOptions) (*azemailsender.EmailMessage, error) {
+	// Get sender email from environment variable
+	fromEmail := os.Getenv("AZURE_EMAIL_FROM")
+	
 	builder := client.NewMessage().
-		From(opts.From).
+		From(fromEmail).
 		Subject(opts.Subject)
 
 	// Add recipients

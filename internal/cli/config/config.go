@@ -16,7 +16,6 @@ type Config struct {
 	ConnectionString string `mapstructure:"connection-string"`
 
 	// Email settings
-	From    string `mapstructure:"from"`
 	ReplyTo string `mapstructure:"reply-to"`
 
 	// Output settings
@@ -51,7 +50,6 @@ func Load(configFile string) (*Config, error) {
 	v.BindEnv("endpoint", "AZURE_EMAIL_ENDPOINT")
 	v.BindEnv("access-key", "AZURE_EMAIL_ACCESS_KEY")
 	v.BindEnv("connection-string", "AZURE_EMAIL_CONNECTION_STRING")
-	v.BindEnv("from", "AZURE_EMAIL_FROM")
 	v.BindEnv("reply-to", "AZURE_EMAIL_REPLY_TO")
 	v.BindEnv("debug", "AZURE_EMAIL_DEBUG")
 	v.BindEnv("quiet", "AZURE_EMAIL_QUIET")
@@ -91,7 +89,6 @@ func SaveDefaultConfig(path string) error {
 	defaultConfig := `{
   "endpoint": "https://your-resource.communication.azure.com",
   "access-key": "your-access-key",
-  "from": "sender@yourdomain.com",
   "reply-to": "",
   "debug": false,
   "quiet": false,

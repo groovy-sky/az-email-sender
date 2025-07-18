@@ -65,16 +65,18 @@ make build
 ## CLI Quick Start
 
 ```bash
+# Set required environment variable
+export AZURE_EMAIL_FROM="sender@yourdomain.com"
+
 # Send a simple email
 azemailsender-cli send \
   --endpoint "https://your-resource.communication.azure.com" \
   --access-key "your-access-key" \
-  --from "sender@yourdomain.com" \
   --to "recipient@example.com" \
   --subject "Hello World" \
   --text "This is a test email"
 
-# Use environment variables
+# Use environment variables for authentication too
 export AZURE_EMAIL_ENDPOINT="https://your-resource.communication.azure.com"
 export AZURE_EMAIL_ACCESS_KEY="your-access-key"
 export AZURE_EMAIL_FROM="sender@yourdomain.com"
@@ -85,7 +87,6 @@ echo "Email content from stdin" | azemailsender-cli send \
 
 # Send HTML email with multiple recipients
 azemailsender-cli send \
-  --from "sender@yourdomain.com" \
   --to "user1@example.com" --to "user2@example.com" \
   --cc "manager@example.com" \
   --subject "Team Update" \
@@ -365,8 +366,11 @@ The **azemailsender-cli** tool provides a command-line interface for the library
 ### CLI Examples
 
 ```bash
+# Set sender email address first
+export AZURE_EMAIL_FROM="sender@example.com"
+
 # Basic email sending
-azemailsender-cli send --from sender@example.com --to user@example.com --subject "Test" --text "Hello"
+azemailsender-cli send --to user@example.com --subject "Test" --text "Hello"
 
 # Pipeline integration  
 generate-report | azemailsender-cli send --to team@company.com --subject "Daily Report" --html-file report.html
