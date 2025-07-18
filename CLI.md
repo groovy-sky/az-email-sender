@@ -49,11 +49,11 @@ make build
 ### Basic Usage
 
 ```bash
-# Send a simple email
+# Send a simple email (set sender address via environment variable)
+export AZ_EMAIL_SENDER_FROM="sender@yourdomain.com"
 azemailsender-cli send \
   --endpoint "https://your-resource.communication.azure.com" \
   --access-key "your-access-key" \
-  --from "sender@yourdomain.com" \
   --to "recipient@example.com" \
   --subject "Hello World" \
   --text "This is a test email"
@@ -62,9 +62,9 @@ azemailsender-cli send \
 ### Using Connection String
 
 ```bash
+export AZ_EMAIL_SENDER_FROM="sender@yourdomain.com"
 azemailsender-cli send \
   --connection-string "endpoint=https://your-resource.communication.azure.com;accesskey=your-access-key" \
-  --from "sender@yourdomain.com" \
   --to "recipient@example.com" \
   --subject "Hello World" \
   --text "This is a test email"
@@ -82,13 +82,13 @@ azemailsender-cli config init --path ~/.config/azemailsender/config.json
 {
   "endpoint": "https://your-resource.communication.azure.com",
   "access_key": "your-access-key",
-  "from": "sender@yourdomain.com",
   "debug": false,
   "quiet": false,
   "json": false
 }
 
-# Send email using config
+# Send email using config (set sender address via environment variable)
+export AZ_EMAIL_SENDER_FROM="sender@yourdomain.com"
 azemailsender-cli send \
   --config ~/.config/azemailsender/config.json \
   --to "recipient@example.com" \
@@ -102,7 +102,7 @@ azemailsender-cli send \
 # Set environment variables
 export AZURE_EMAIL_ENDPOINT="https://your-resource.communication.azure.com"
 export AZURE_EMAIL_ACCESS_KEY="your-access-key"
-export AZURE_EMAIL_FROM="sender@yourdomain.com"
+export AZ_EMAIL_SENDER_FROM="sender@yourdomain.com"
 
 # Send email (credentials read from environment)
 azemailsender-cli send \
@@ -122,10 +122,12 @@ azemailsender-cli send [flags]
 ```
 
 **Required flags:**
-- `--from, -f` - Sender email address
 - `--subject, -s` - Email subject
 - At least one recipient (`--to`, `--cc`, or `--bcc`)
 - Authentication (`--connection-string` OR `--endpoint` + `--access-key`)
+
+**Required environment variable:**
+- `AZ_EMAIL_SENDER_FROM` - Sender email address
 
 **Content flags:**
 - `--text` - Plain text email content
@@ -152,20 +154,21 @@ azemailsender-cli send [flags]
 **Examples:**
 
 ```bash
-# Simple email
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World"
+# Simple email (set sender address via environment variable)
+export AZ_EMAIL_SENDER_FROM="sender@example.com"
+azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World"
 
 # HTML email with multiple recipients
-azemailsender-cli send --from sender@example.com --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
+azemailsender-cli send --to user1@example.com --to user2@example.com --cc manager@example.com --subject "Report" --html "<h1>Monthly Report</h1>"
 
 # Send email and wait for completion
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Hello" --text "Hello World" --wait
+azemailsender-cli send --to recipient@example.com --subject "Hello" --text "Hello World" --wait
 
 # Read content from stdin
-echo "Hello from stdin" | azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Stdin Test"
+echo "Hello from stdin" | azemailsender-cli send --to recipient@example.com --subject "Stdin Test"
 
 # Read content from file
-azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "File Test" --text-file message.txt
+azemailsender-cli send --to recipient@example.com --subject "File Test" --text-file message.txt
 ```
 
 ### status
@@ -285,7 +288,8 @@ These flags are available for all commands:
 ### Standard Output
 
 ```bash
-$ azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Test" --text "Hello"
+$ export AZ_EMAIL_SENDER_FROM="sender@example.com"
+$ azemailsender-cli send --to recipient@example.com --subject "Test" --text "Hello"
 Email sent successfully!
 Message ID: abc123def456
 ```
@@ -293,7 +297,7 @@ Message ID: abc123def456
 ### JSON Output
 
 ```bash
-$ azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Test" --text "Hello" --json
+$ azemailsender-cli send --to recipient@example.com --subject "Test" --text "Hello" --json
 {
   "id": "abc123def456",
   "status": "Queued",
@@ -304,7 +308,7 @@ $ azemailsender-cli send --from sender@example.com --to recipient@example.com --
 ### Debug Output
 
 ```bash
-$ azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "Test" --text "Hello" --debug
+$ azemailsender-cli send --to recipient@example.com --subject "Test" --text "Hello" --debug
 [DEBUG] Client initialized with endpoint: https://your-resource.communication.azure.com
 [DEBUG] Authentication method: HMAC-SHA256
 [DEBUG] Creating new message builder
@@ -330,7 +334,7 @@ The CLI uses standard Unix exit codes:
 Error messages are written to stderr:
 
 ```bash
-$ azemailsender-cli send --from sender@example.com --subject "Test" --text "Hello"
+$ azemailsender-cli send --subject "Test" --text "Hello"
 Error: validation failed:
   at least one recipient required (--to, --cc, or --bcc)
 ```
@@ -343,11 +347,11 @@ Error: validation failed:
 #!/bin/bash
 # Send daily report
 
+export AZ_EMAIL_SENDER_FROM="reports@company.com"
 REPORT_FILE="/tmp/daily-report.html"
 generate_report > "$REPORT_FILE"
 
 azemailsender-cli send \
-  --from "reports@company.com" \
   --to "manager@company.com" \
   --cc "team@company.com" \
   --subject "Daily Report - $(date +%Y-%m-%d)" \
