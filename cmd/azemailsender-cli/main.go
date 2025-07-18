@@ -5,8 +5,7 @@ import (
 	"os"
 
 	"github.com/groovy-sky/azemailsender/internal/cli/commands"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/groovy-sky/azemailsender/internal/simplecli"
 )
 
 var (
@@ -16,35 +15,73 @@ var (
 )
 
 func main() {
-	rootCmd := &cobra.Command{
-		Use:   "azemailsender-cli",
-		Short: "Azure Communication Services Email CLI",
-		Long: `A command-line interface for sending emails using Azure Communication Services.
+	// Create global CLI context
+	app := simplecli.NewGlobalContext("azemailsender-cli", 
+		`A command-line interface for sending emails using Azure Communication Services.
 Supports multiple authentication methods, flexible recipient management,
-and both plain text and HTML email content.`,
-		SilenceUsage: true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Bind flags to viper
-			viper.BindPFlag("config", cmd.PersistentFlags().Lookup("config"))
-			viper.BindPFlag("debug", cmd.PersistentFlags().Lookup("debug"))
-			viper.BindPFlag("quiet", cmd.PersistentFlags().Lookup("quiet"))
-			viper.BindPFlag("json", cmd.PersistentFlags().Lookup("json"))
+and both plain text and HTML email content.`)
+
+	// Add global flags
+	app.AddGlobalFlag(&simplecli.Flag{
+		Name:        "config",
+		Short:       "c",
+		Description: "Configuration file path",
+		Value:       "",
+	})
+	app.AddGlobalFlag(&simplecli.Flag{
+		Name:        "debug",
+		Short:       "d",
+		Description: "Enable debug logging",
+		Value:       false,
+	})
+	app.AddGlobalFlag(&simplecli.Flag{
+		Name:        "quiet",
+		Short:       "q",
+		Description: "Suppress output except errors",
+		Value:       false,
+	})
+	app.AddGlobalFlag(&simplecli.Flag{
+		Name:        "json",
+		Short:       "j",
+		Description: "Output in JSON format",
+		Value:       false,
+	})
+
+	// Add commands using new framework
+	app.AddCommand(commands.NewSimpleVersionCommand(version, commit, date))
+
+	// Placeholder commands (to be migrated)
+	app.AddCommand(&simplecli.Command{
+		Name:        "send",
+		Description: "Send an email",
+		Usage:       "send [flags]",
+		LongDesc:    "Send an email using Azure Communication Services.",
+		Run: func(ctx *simplecli.Context) error {
+			return fmt.Errorf("send command will be implemented in next step")
 		},
-	}
+	})
 
-	// Global flags
-	rootCmd.PersistentFlags().StringP("config", "c", "", "Configuration file path")
-	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Enable debug logging")
-	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Suppress output except errors")
-	rootCmd.PersistentFlags().BoolP("json", "j", false, "Output in JSON format")
+	app.AddCommand(&simplecli.Command{
+		Name:        "status",
+		Description: "Check email status",
+		Usage:       "status <message-id>",
+		LongDesc:    "Check the status of a previously sent email.",
+		Run: func(ctx *simplecli.Context) error {
+			return fmt.Errorf("status command will be implemented in next step")
+		},
+	})
 
-	// Add commands
-	rootCmd.AddCommand(commands.NewSendCommand())
-	rootCmd.AddCommand(commands.NewStatusCommand())
-	rootCmd.AddCommand(commands.NewConfigCommand())
-	rootCmd.AddCommand(commands.NewVersionCommand(version, commit, date))
+	app.AddCommand(&simplecli.Command{
+		Name:        "config",
+		Description: "Manage configuration",
+		Usage:       "config [subcommand]",
+		LongDesc:    "Manage configuration files and environment variables for azemailsender-cli",
+		Run: func(ctx *simplecli.Context) error {
+			return fmt.Errorf("config command will be implemented in next step")
+		},
+	})
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := app.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
