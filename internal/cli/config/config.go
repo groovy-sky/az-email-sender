@@ -25,7 +25,7 @@ type Config struct {
 	JSON  bool `mapstructure:"json"`
 
 	// Wait settings
-	Wait        bool   `mapstructure:"wait"`
+	Wait         bool   `mapstructure:"wait"`
 	PollInterval string `mapstructure:"poll-interval"`
 	MaxWaitTime  string `mapstructure:"max-wait-time"`
 }
@@ -33,7 +33,7 @@ type Config struct {
 // Load loads configuration from file, environment variables, and command line flags
 func Load(configFile string) (*Config, error) {
 	v := viper.New()
-	
+
 	// Set defaults
 	v.SetDefault("debug", false)
 	v.SetDefault("quiet", false)
@@ -72,7 +72,7 @@ func Load(configFile string) (*Config, error) {
 		v.AddConfigPath(".")
 		v.AddConfigPath("$HOME/.config/azemailsender")
 		v.AddConfigPath("/etc/azemailsender")
-		
+
 		// Try to read config file (ignore if not found)
 		v.ReadInConfig()
 	}

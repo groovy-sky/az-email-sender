@@ -162,7 +162,7 @@ func runSend(cmd *cobra.Command, opts *SendOptions) error {
 	// Wait for completion if requested
 	if opts.Wait {
 		formatter.PrintInfo("Waiting for email completion...")
-		
+
 		waitOptions := &azemailsender.WaitOptions{
 			PollInterval: opts.PollInterval,
 			MaxWaitTime:  opts.MaxWaitTime,
@@ -206,7 +206,7 @@ func mergeOptions(opts *SendOptions, cfg *config.Config) error {
 	if opts.From == "" {
 		opts.From = os.Getenv("AZ_EMAIL_SENDER_FROM")
 	}
-	
+
 	// Merge other email settings
 	if opts.ReplyTo == "" {
 		opts.ReplyTo = cfg.ReplyTo
