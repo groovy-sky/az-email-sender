@@ -7,36 +7,16 @@ import (
 	"github.com/groovy-sky/azemailsender"
 	"github.com/groovy-sky/azemailsender/internal/cli/config"
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/urfave/cli/v2"
 )
 
-// StatusOptions holds options for the status command
-type StatusOptions struct {
-	// Authentication
-	Endpoint         string
-	AccessKey        string
-	ConnectionString string
-
-	// Behavior
-	Wait         bool
-	PollInterval time.Duration
-	MaxWaitTime  time.Duration
-
-	// Output
-	Debug bool
-	Quiet bool
-	JSON  bool
-}
 
 // NewStatusCommand creates the status command
-func NewStatusCommand() *cobra.Command {
-	opts := &StatusOptions{}
-
-	cmd := &cobra.Command{
-		Use:   "status <message-id>",
-		Short: "Check email status",
-		Long: `Check the status of a previously sent email.
+func NewStatusCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "status",
+		Usage: "Check email status",
+		Description: `Check the status of a previously sent email.
 
 Examples:
   # Check status once
@@ -47,65 +27,124 @@ Examples:
 
   # Check status with custom polling interval
   azemailsender-cli status abc123def456 --wait --poll-interval 10s --max-wait-time 2m`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStatus(cmd, args[0], opts)
+		ArgsUsage: "<message-id>",
+		Flags: []cli.Flag{
+			// Authentication flags
+			&cli.StringFlag{
+				Name:    "endpoint",
+				Aliases: []string{"e"},
+				Usage:   "Azure Communication Services endpoint",
+				EnvVars: []string{"AZURE_EMAIL_ENDPOINT"},
+			},
+			&cli.StringFlag{
+				Name:    "access-key",
+				Aliases: []string{"k"},
+				Usage:   "Access key for authentication",
+				EnvVars: []string{"AZURE_EMAIL_ACCESS_KEY"},
+			},
+			&cli.StringFlag{
+				Name:    "connection-string",
+				Usage:   "Connection string for authentication",
+				EnvVars: []string{"AZURE_EMAIL_CONNECTION_STRING"},
+			},
+			// Behavior flags
+			&cli.BoolFlag{
+				Name:    "wait",
+				Aliases: []string{"w"},
+				Usage:   "Wait for email completion",
+			},
+			&cli.DurationFlag{
+				Name:  "poll-interval",
+				Usage: "Status polling interval (when --wait is used)",
+				Value: 5 * time.Second,
+			},
+			&cli.DurationFlag{
+				Name:  "max-wait-time",
+				Usage: "Maximum wait time (when --wait is used)",
+				Value: 5 * time.Minute,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if c.NArg() != 1 {
+				return fmt.Errorf("expected exactly one argument: message-id")
+			}
+			return runStatus(c, c.Args().Get(0))
 		},
 	}
-
-	// Authentication flags
-	cmd.Flags().StringVarP(&opts.Endpoint, "endpoint", "e", "", "Azure Communication Services endpoint")
-	cmd.Flags().StringVarP(&opts.AccessKey, "access-key", "k", "", "Access key for authentication")
-	cmd.Flags().StringVar(&opts.ConnectionString, "connection-string", "", "Connection string for authentication")
-
-	// Behavior flags
-	cmd.Flags().BoolVarP(&opts.Wait, "wait", "w", false, "Wait for email completion")
-	cmd.Flags().DurationVar(&opts.PollInterval, "poll-interval", 5*time.Second, "Status polling interval (when --wait is used)")
-	cmd.Flags().DurationVar(&opts.MaxWaitTime, "max-wait-time", 5*time.Minute, "Maximum wait time (when --wait is used)")
-
-	return cmd
 }
 
-func runStatus(cmd *cobra.Command, messageID string, opts *StatusOptions) error {
+func runStatus(c *cli.Context, messageID string) error {
 	// Load configuration
-	configFile, _ := cmd.Flags().GetString("config")
+	configFile := c.String("config")
 	cfg, err := config.Load(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	// Override config with command-line flags
-	if err := mergeStatusOptions(opts, cfg); err != nil {
-		return err
+	// Get flags and merge with configuration
+	debug := c.Bool("debug")
+	quiet := c.Bool("quiet")
+	jsonOutput := c.Bool("json")
+
+	// Merge authentication (CLI flags take precedence)
+	endpoint := c.String("endpoint")
+	if endpoint == "" {
+		endpoint = cfg.Endpoint
+	}
+	accessKey := c.String("access-key")
+	if accessKey == "" {
+		accessKey = cfg.AccessKey
+	}
+	connectionString := c.String("connection-string")
+	if connectionString == "" {
+		connectionString = cfg.ConnectionString
 	}
 
 	// Create output formatter
-	formatter := output.NewFormatter(opts.JSON, opts.Quiet, opts.Debug)
+	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
-	// Validate options
-	if err := validateStatusOptions(opts); err != nil {
+	// Validate authentication
+	hasAuth := false
+	if connectionString != "" {
+		hasAuth = true
+	} else if endpoint != "" && accessKey != "" {
+		hasAuth = true
+	}
+
+	if !hasAuth {
+		err := fmt.Errorf("authentication required: provide either --connection-string or both --endpoint and --access-key")
 		formatter.PrintError(err)
 		return err
 	}
 
 	// Create email client
-	client, err := createStatusEmailClient(opts)
-	if err != nil {
-		formatter.PrintError(err)
-		return err
+	clientOptions := &azemailsender.ClientOptions{
+		Debug: debug,
+	}
+
+	var client *azemailsender.Client
+	if connectionString != "" {
+		client, err = azemailsender.NewClientFromConnectionString(connectionString, clientOptions)
+		if err != nil {
+			formatter.PrintError(err)
+			return err
+		}
+	} else {
+		client = azemailsender.NewClient(endpoint, accessKey, clientOptions)
 	}
 
 	formatter.PrintDebug("Checking status for message ID: %s", messageID)
 
-	if opts.Wait {
+	wait := c.Bool("wait")
+	if wait {
 		// Wait for completion
 		formatter.PrintInfo("Waiting for email completion...")
 		
 		waitOptions := &azemailsender.WaitOptions{
-			PollInterval: opts.PollInterval,
-			MaxWaitTime:  opts.MaxWaitTime,
+			PollInterval: c.Duration("poll-interval"),
+			MaxWaitTime:  c.Duration("max-wait-time"),
 			OnStatusUpdate: func(status *azemailsender.StatusResponse) {
-				if !opts.Quiet && !opts.JSON {
+				if !quiet && !jsonOutput {
 					fmt.Printf("Status: %s\n", status.Status)
 				}
 			},
@@ -130,50 +169,3 @@ func runStatus(cmd *cobra.Command, messageID string, opts *StatusOptions) error 
 	}
 }
 
-func mergeStatusOptions(opts *StatusOptions, cfg *config.Config) error {
-	// Get global flags from viper
-	opts.Debug = viper.GetBool("debug") || opts.Debug
-	opts.Quiet = viper.GetBool("quiet") || opts.Quiet
-	opts.JSON = viper.GetBool("json") || opts.JSON
-
-	// Merge authentication (CLI flags take precedence)
-	if opts.Endpoint == "" {
-		opts.Endpoint = cfg.Endpoint
-	}
-	if opts.AccessKey == "" {
-		opts.AccessKey = cfg.AccessKey
-	}
-	if opts.ConnectionString == "" {
-		opts.ConnectionString = cfg.ConnectionString
-	}
-
-	return nil
-}
-
-func validateStatusOptions(opts *StatusOptions) error {
-	// Check authentication
-	hasAuth := false
-	if opts.ConnectionString != "" {
-		hasAuth = true
-	} else if opts.Endpoint != "" && opts.AccessKey != "" {
-		hasAuth = true
-	}
-
-	if !hasAuth {
-		return fmt.Errorf("authentication required: provide either --connection-string or both --endpoint and --access-key")
-	}
-
-	return nil
-}
-
-func createStatusEmailClient(opts *StatusOptions) (*azemailsender.Client, error) {
-	clientOptions := &azemailsender.ClientOptions{
-		Debug: opts.Debug,
-	}
-
-	if opts.ConnectionString != "" {
-		return azemailsender.NewClientFromConnectionString(opts.ConnectionString, clientOptions)
-	}
-
-	return azemailsender.NewClient(opts.Endpoint, opts.AccessKey, clientOptions), nil
-}

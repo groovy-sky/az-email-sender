@@ -11,8 +11,7 @@ import (
 	"github.com/groovy-sky/azemailsender"
 	"github.com/groovy-sky/azemailsender/internal/cli/config"
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/urfave/cli/v2"
 )
 
 // SendOptions holds options for the send command
@@ -47,13 +46,11 @@ type SendOptions struct {
 }
 
 // NewSendCommand creates the send command
-func NewSendCommand() *cobra.Command {
-	opts := &SendOptions{}
-
-	cmd := &cobra.Command{
-		Use:   "send",
-		Short: "Send an email",
-		Long: `Send an email using Azure Communication Services.
+func NewSendCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "send",
+		Usage: "Send an email",
+		Description: `Send an email using Azure Communication Services.
 
 Examples:
   # Send a simple email
@@ -70,38 +67,94 @@ Examples:
 
   # Read content from file
   azemailsender-cli send --from sender@example.com --to recipient@example.com --subject "File Test" --text-file message.txt`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSend(cmd, opts)
+		Flags: []cli.Flag{
+			// Authentication flags
+			&cli.StringFlag{
+				Name:     "endpoint",
+				Aliases:  []string{"e"},
+				Usage:    "Azure Communication Services endpoint",
+				EnvVars:  []string{"AZURE_EMAIL_ENDPOINT"},
+			},
+			&cli.StringFlag{
+				Name:     "access-key",
+				Aliases:  []string{"k"},
+				Usage:    "Access key for authentication",
+				EnvVars:  []string{"AZURE_EMAIL_ACCESS_KEY"},
+			},
+			&cli.StringFlag{
+				Name:     "connection-string",
+				Usage:    "Connection string for authentication",
+				EnvVars:  []string{"AZURE_EMAIL_CONNECTION_STRING"},
+			},
+			// Email content flags
+			&cli.StringFlag{
+				Name:     "from",
+				Aliases:  []string{"f"},
+				Usage:    "Sender email address",
+				EnvVars:  []string{"AZURE_EMAIL_FROM"},
+				Required: true,
+			},
+			&cli.StringSliceFlag{
+				Name:    "to",
+				Aliases: []string{"t"},
+				Usage:   "To recipients (can be repeated)",
+			},
+			&cli.StringSliceFlag{
+				Name:  "cc",
+				Usage: "CC recipients (can be repeated)",
+			},
+			&cli.StringSliceFlag{
+				Name:  "bcc",
+				Usage: "BCC recipients (can be repeated)",
+			},
+			&cli.StringFlag{
+				Name:    "reply-to",
+				Usage:   "Reply-to email address",
+				EnvVars: []string{"AZURE_EMAIL_REPLY_TO"},
+			},
+			&cli.StringFlag{
+				Name:     "subject",
+				Aliases:  []string{"s"},
+				Usage:    "Email subject",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:  "text",
+				Usage: "Plain text email content",
+			},
+			&cli.StringFlag{
+				Name:  "html",
+				Usage: "HTML email content",
+			},
+			&cli.StringFlag{
+				Name:  "text-file",
+				Usage: "Read plain text content from file",
+			},
+			&cli.StringFlag{
+				Name:  "html-file",
+				Usage: "Read HTML content from file",
+			},
+			// Behavior flags
+			&cli.BoolFlag{
+				Name:    "wait",
+				Aliases: []string{"w"},
+				Usage:   "Wait for email completion",
+			},
+			&cli.DurationFlag{
+				Name:  "poll-interval",
+				Usage: "Status polling interval (when --wait is used)",
+				Value: 5 * time.Second,
+			},
+			&cli.DurationFlag{
+				Name:  "max-wait-time",
+				Usage: "Maximum wait time (when --wait is used)",
+				Value: 5 * time.Minute,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			return runSend(c)
 		},
 	}
-
-	// Authentication flags
-	cmd.Flags().StringVarP(&opts.Endpoint, "endpoint", "e", "", "Azure Communication Services endpoint")
-	cmd.Flags().StringVarP(&opts.AccessKey, "access-key", "k", "", "Access key for authentication")
-	cmd.Flags().StringVar(&opts.ConnectionString, "connection-string", "", "Connection string for authentication")
-
-	// Email content flags
-	cmd.Flags().StringVarP(&opts.From, "from", "f", "", "Sender email address")
-	cmd.Flags().StringSliceVarP(&opts.To, "to", "t", []string{}, "To recipients (can be repeated)")
-	cmd.Flags().StringSliceVar(&opts.Cc, "cc", []string{}, "CC recipients (can be repeated)")
-	cmd.Flags().StringSliceVar(&opts.Bcc, "bcc", []string{}, "BCC recipients (can be repeated)")
-	cmd.Flags().StringVar(&opts.ReplyTo, "reply-to", "", "Reply-to email address")
-	cmd.Flags().StringVarP(&opts.Subject, "subject", "s", "", "Email subject")
-	cmd.Flags().StringVar(&opts.Text, "text", "", "Plain text email content")
-	cmd.Flags().StringVar(&opts.HTML, "html", "", "HTML email content")
-	cmd.Flags().StringVar(&opts.TextFile, "text-file", "", "Read plain text content from file")
-	cmd.Flags().StringVar(&opts.HTMLFile, "html-file", "", "Read HTML content from file")
-
-	// Behavior flags
-	cmd.Flags().BoolVarP(&opts.Wait, "wait", "w", false, "Wait for email completion")
-	cmd.Flags().DurationVar(&opts.PollInterval, "poll-interval", 5*time.Second, "Status polling interval (when --wait is used)")
-	cmd.Flags().DurationVar(&opts.MaxWaitTime, "max-wait-time", 5*time.Minute, "Maximum wait time (when --wait is used)")
-
-	// Required flags
-	cmd.MarkFlagRequired("from")
-	cmd.MarkFlagRequired("subject")
-
-	return cmd
 }
 
 func runSend(cmd *cobra.Command, opts *SendOptions) error {

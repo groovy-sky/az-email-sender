@@ -4,29 +4,26 @@ import (
 	"fmt"
 
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 )
 
 // NewVersionCommand creates the version command
-func NewVersionCommand(version, commit, date string) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Show version information",
-		Long:  "Show version, build commit, and build date information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runVersion(cmd, version, commit, date)
+func NewVersionCommand(version, commit, date string) *cli.Command {
+	return &cli.Command{
+		Name:  "version",
+		Usage: "Show version information",
+		Description: "Show version, build commit, and build date information",
+		Action: func(c *cli.Context) error {
+			return runVersion(c, version, commit, date)
 		},
 	}
-
-	return cmd
 }
 
-func runVersion(cmd *cobra.Command, version, commit, date string) error {
-	// Get flags from root command (persistent flags)
-	rootCmd := cmd.Root()
-	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
-	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
-	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
+func runVersion(c *cli.Context, version, commit, date string) error {
+	// Get flags from global context
+	debug := c.Bool("debug")
+	quiet := c.Bool("quiet")
+	jsonOutput := c.Bool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 
