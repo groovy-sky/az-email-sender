@@ -106,8 +106,8 @@ func (g *GlobalContext) Run() error {
 		return err
 	}
 
-	// Run command
-	return cmd.Run(ctx)
+	// Run command (use the command from context in case it's a subcommand)
+	return ctx.Command.Run(ctx)
 }
 
 // parseGlobalFlags parses global flags from arguments
@@ -200,6 +200,35 @@ func (g *GlobalContext) parseCommand(cmd *Command, globalFlags map[string]interf
 		flags[k] = v
 	}
 	
+	// Check for subcommands first, before processing any flags
+	if len(cmd.Subcommands) > 0 && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		subCmdName := args[0]
+		var subCmd *Command
+		for _, sc := range cmd.Subcommands {
+			if sc.Name == subCmdName {
+				subCmd = sc
+				break
+			}
+		}
+		
+		if subCmd != nil {
+			// Parse subcommand flags
+			subCtx, err := g.parseCommand(subCmd, globalFlags, args[1:])
+			if err != nil {
+				return nil, err
+			}
+			
+			// Copy global flags to subcommand context
+			for k, v := range flags {
+				if _, exists := subCtx.Flags[k]; !exists {
+					subCtx.Flags[k] = v
+				}
+			}
+			
+			return subCtx, nil
+		}
+	}
+	
 	// Set defaults for command flags
 	for _, flag := range cmd.Flags {
 		flags[flag.Name] = flag.Value
@@ -220,6 +249,17 @@ func (g *GlobalContext) parseCommand(cmd *Command, globalFlags map[string]interf
 	
 	for i < len(args) {
 		arg := args[i]
+		
+		// If this command has subcommands, check if this arg is a subcommand name
+		if len(cmd.Subcommands) > 0 && !strings.HasPrefix(arg, "-") {
+			for _, subCmd := range cmd.Subcommands {
+				if arg == subCmd.Name {
+					// Found subcommand, add everything to cmdArgs
+					cmdArgs = append(cmdArgs, args[i:]...)
+					goto endFlagParsing
+				}
+			}
+		}
 		
 		if !strings.HasPrefix(arg, "-") {
 			cmdArgs = append(cmdArgs, args[i:]...)
@@ -290,6 +330,19 @@ func (g *GlobalContext) parseCommand(cmd *Command, globalFlags map[string]interf
 		if err != nil {
 			return nil, err
 		}
+	}
+
+endFlagParsing:
+
+	// If this command requires subcommands but we don't have valid cmdArgs, show error
+	if len(cmd.Subcommands) > 0 {
+		if len(cmdArgs) == 0 {
+			g.printCommandHelp(cmd)
+			return nil, fmt.Errorf("subcommand required")
+		}
+		
+		// If we get here, it means the first arg wasn't a recognized subcommand
+		return nil, fmt.Errorf("unknown subcommand: %s", cmdArgs[0])
 	}
 
 	// Validate required flags
@@ -377,6 +430,14 @@ func (g *GlobalContext) printCommandHelp(cmd *Command) {
 	
 	if cmd.Examples != "" {
 		fmt.Printf("Examples:\n%s\n\n", cmd.Examples)
+	}
+	
+	if len(cmd.Subcommands) > 0 {
+		fmt.Println("Available Commands:")
+		for _, subCmd := range cmd.Subcommands {
+			fmt.Printf("  %-12s %s\n", subCmd.Name, subCmd.Description)
+		}
+		fmt.Println()
 	}
 	
 	if len(cmd.Flags) > 0 {

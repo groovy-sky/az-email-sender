@@ -49,6 +49,7 @@ and both plain text and HTML email content.`)
 
 	// Add commands using new framework
 	app.AddCommand(commands.NewSimpleVersionCommand(version, commit, date))
+	app.AddCommand(commands.NewSimpleConfigCommand())
 
 	// Placeholder commands (to be migrated)
 	app.AddCommand(&simplecli.Command{
@@ -68,16 +69,6 @@ and both plain text and HTML email content.`)
 		LongDesc:    "Check the status of a previously sent email.",
 		Run: func(ctx *simplecli.Context) error {
 			return fmt.Errorf("status command will be implemented in next step")
-		},
-	})
-
-	app.AddCommand(&simplecli.Command{
-		Name:        "config",
-		Description: "Manage configuration",
-		Usage:       "config [subcommand]",
-		LongDesc:    "Manage configuration files and environment variables for azemailsender-cli",
-		Run: func(ctx *simplecli.Context) error {
-			return fmt.Errorf("config command will be implemented in next step")
 		},
 	})
 

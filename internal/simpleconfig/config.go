@@ -25,9 +25,9 @@ type Config struct {
 	JSON  bool `json:"json"`
 
 	// Wait settings
-	Wait         bool          `json:"wait"`
-	PollInterval time.Duration `json:"poll-interval"`
-	MaxWaitTime  time.Duration `json:"max-wait-time"`
+	Wait         bool   `json:"wait"`
+	PollInterval string `json:"poll-interval"`
+	MaxWaitTime  string `json:"max-wait-time"`
 }
 
 // LoadConfig loads configuration with priority: defaults -> config file -> env vars -> CLI flags
@@ -38,8 +38,8 @@ func LoadConfig(configFile string, cliFlags map[string]interface{}) (*Config, er
 		Quiet:        false,
 		JSON:         false,
 		Wait:         false,
-		PollInterval: 5 * time.Second,
-		MaxWaitTime:  5 * time.Minute,
+		PollInterval: "5s",
+		MaxWaitTime:  "5m",
 	}
 
 	// Load from config file (if exists)
@@ -92,28 +92,9 @@ func loadFromFile(config *Config, configFile string) error {
 		return nil
 	}
 
-	// Parse durations as strings in JSON, then convert
-	var rawConfig map[string]interface{}
-	if err := json.Unmarshal(data, &rawConfig); err != nil {
-		return fmt.Errorf("failed to parse config file %s: %w", filePath, err)
-	}
-
-	// Convert back to JSON to unmarshal into struct (handles most fields)
-	jsonData, _ := json.Marshal(rawConfig)
-	if err := json.Unmarshal(jsonData, config); err != nil {
+	// Parse JSON normally
+	if err := json.Unmarshal(data, config); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	// Handle duration fields manually
-	if pollInterval, ok := rawConfig["poll-interval"].(string); ok {
-		if d, err := time.ParseDuration(pollInterval); err == nil {
-			config.PollInterval = d
-		}
-	}
-	if maxWaitTime, ok := rawConfig["max-wait-time"].(string); ok {
-		if d, err := time.ParseDuration(maxWaitTime); err == nil {
-			config.MaxWaitTime = d
-		}
 	}
 
 	return nil
@@ -150,14 +131,10 @@ func loadFromEnv(config *Config) {
 
 	// Duration environment variables
 	if value := os.Getenv("AZURE_EMAIL_POLL_INTERVAL"); value != "" {
-		if d, err := time.ParseDuration(value); err == nil {
-			config.PollInterval = d
-		}
+		config.PollInterval = value
 	}
 	if value := os.Getenv("AZURE_EMAIL_MAX_WAIT_TIME"); value != "" {
-		if d, err := time.ParseDuration(value); err == nil {
-			config.MaxWaitTime = d
-		}
+		config.MaxWaitTime = value
 	}
 }
 
@@ -190,10 +167,10 @@ func loadFromFlags(config *Config, flags map[string]interface{}) {
 	if val, ok := flags["wait"].(bool); ok {
 		config.Wait = val
 	}
-	if val, ok := flags["poll-interval"].(time.Duration); ok && val > 0 {
+	if val, ok := flags["poll-interval"].(string); ok && val != "" {
 		config.PollInterval = val
 	}
-	if val, ok := flags["max-wait-time"].(time.Duration); ok && val > 0 {
+	if val, ok := flags["max-wait-time"].(string); ok && val != "" {
 		config.MaxWaitTime = val
 	}
 }
@@ -237,4 +214,20 @@ export AZURE_EMAIL_REPLY_TO="reply@yourdomain.com"
 export AZURE_EMAIL_DEBUG="false"
 export AZURE_EMAIL_QUIET="false" 
 export AZURE_EMAIL_JSON="false"`
+}
+
+// GetPollInterval returns the poll interval as a time.Duration
+func (c *Config) GetPollInterval() time.Duration {
+	if d, err := time.ParseDuration(c.PollInterval); err == nil {
+		return d
+	}
+	return 5 * time.Second // default
+}
+
+// GetMaxWaitTime returns the max wait time as a time.Duration
+func (c *Config) GetMaxWaitTime() time.Duration {
+	if d, err := time.ParseDuration(c.MaxWaitTime); err == nil {
+		return d
+	}
+	return 5 * time.Minute // default
 }
