@@ -4,29 +4,26 @@ import (
 	"fmt"
 
 	"github.com/groovy-sky/azemailsender/internal/cli/output"
-	"github.com/spf13/cobra"
+	"github.com/groovy-sky/azemailsender/internal/simplecli"
 )
 
 // NewVersionCommand creates the version command
-func NewVersionCommand(version, commit, date string) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Show version information",
-		Long:  "Show version, build commit, and build date information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runVersion(cmd, version, commit, date)
+func NewVersionCommand(version, commit, date string) *simplecli.Command {
+	return &simplecli.Command{
+		Name:        "version",
+		Description: "Show version information",
+		Usage:       "version",
+		LongDesc:    "Show version, build commit, and build date information",
+		Run: func(ctx *simplecli.Context) error {
+			return runVersionCommand(ctx, version, commit, date)
 		},
 	}
-
-	return cmd
 }
 
-func runVersion(cmd *cobra.Command, version, commit, date string) error {
-	// Get flags from root command (persistent flags)
-	rootCmd := cmd.Root()
-	debug, _ := rootCmd.PersistentFlags().GetBool("debug")
-	quiet, _ := rootCmd.PersistentFlags().GetBool("quiet")
-	jsonOutput, _ := rootCmd.PersistentFlags().GetBool("json")
+func runVersionCommand(ctx *simplecli.Context, version, commit, date string) error {
+	debug := ctx.GetBool("debug")
+	quiet := ctx.GetBool("quiet")
+	jsonOutput := ctx.GetBool("json")
 
 	formatter := output.NewFormatter(jsonOutput, quiet, debug)
 

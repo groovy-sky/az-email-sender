@@ -47,11 +47,11 @@ and both plain text and HTML email content.`)
 		Value:       false,
 	})
 
-	// Add commands using new framework
-	app.AddCommand(commands.NewSimpleVersionCommand(version, commit, date))
-	app.AddCommand(commands.NewSimpleConfigCommand())
-	app.AddCommand(commands.NewSimpleStatusCommand())
-	app.AddCommand(commands.NewSimpleSendCommand())
+	// Add all commands
+	app.AddCommand(commands.NewVersionCommand(version, commit, date))
+	app.AddCommand(commands.NewConfigCommand())
+	app.AddCommand(commands.NewStatusCommand())
+	app.AddCommand(commands.NewSendCommand())
 
 
 
