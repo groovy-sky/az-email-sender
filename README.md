@@ -51,7 +51,7 @@ go get github.com/groovy-sky/azemailsender
 
 **Install script:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/groovy-sky/azemailsender/main/scripts/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/groovy-sky/azemailsender/master/scripts/install.sh | bash
 ```
 
 **Build from source:**
