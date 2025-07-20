@@ -8,34 +8,6 @@ This library now includes **azemailsender-cli**, a command-line interface that m
 
 **[📖 CLI Documentation](CLI.md)** | **[🔧 CLI Quick Start](#cli-quick-start)**
 
-## Features
-
-### Go Library
-- **HTTP-based email sending** using Azure Communication Services REST API
-- **HMAC-SHA256 authentication** for Azure API with automatic signature generation
-- **Multiple authentication methods**: endpoint/access key, connection string, and legacy api-key
-- **Fluent message builder interface** for easy email construction
-- **Automatic status polling** with customizable intervals and callbacks
-- **Support for HTML and plain text content**
-- **CC and BCC recipients support**
-- **Comprehensive error handling** with wrapped errors
-- **Extensive debug logging** throughout the entire process
-- **Configurable debug logging** (enable/disable at runtime)
-- **Custom logger support** for integration with existing logging systems
-- **Thread-safe client implementation**
-- **Configurable HTTP timeouts and retry logic**
-
-### CLI Tool
-- **Command-line email sending** with standard Unix patterns
-- **Multiple authentication methods** - endpoint/access key, connection string
-- **Flexible recipient management** - To, CC, BCC recipients with display names
-- **Content options** - Plain text, HTML, file input, stdin piping
-- **Configuration file support** - JSON config files for common settings
-- **Environment variable support** - Read credentials from environment
-- **Cross-platform compatibility** - Windows, Linux, macOS binaries
-- **JSON output** - Machine-readable output for scripting
-- **Status monitoring** - Check delivery status and wait for completion
-
 ## Installation
 
 ### Go Library
@@ -92,8 +64,6 @@ azemailsender-cli send \
   --html "<h1>Important Update</h1><p>Please review the attached information.</p>" \
   --wait
 ```
-
-For complete CLI documentation, see **[CLI.md](CLI.md)**.
 
 ## Requirements
 
@@ -284,52 +254,6 @@ client, err := azemailsender.NewClientFromConnectionString(connectionString, opt
 client := azemailsender.NewClientWithAccessKey(endpoint, accessKey, options)
 ```
 
-## Debug Output
-
-When debug logging is enabled, the library provides comprehensive information about:
-
-- Client initialization and configuration
-- Message building steps and validation
-- HTTP request details (URL, headers, body size)
-- Authentication signature generation process
-- Response details and timing information
-- Status polling attempts and results
-- Error details and troubleshooting information
-
-Example debug output:
-```
-[DEBUG] Client initialized with endpoint: https://your-resource.communication.azure.com
-[DEBUG] Authentication method: HMAC-SHA256
-[DEBUG] API Version: 2024-07-01-preview
-[DEBUG] Creating new message builder
-[DEBUG] Setting sender address: sender@example.com
-[DEBUG] Adding TO recipient: recipient@example.com
-[DEBUG] Setting email subject: Test Email
-[DEBUG] Setting plain text content (20 characters)
-[DEBUG] Message validation successful
-[DEBUG] Starting email send process
-[DEBUG] Generating HMAC signature
-[DEBUG] HTTP Request: POST https://your-resource.communication.azure.com/emails:send
-[DEBUG] Email sent successfully in 1.234s
-```
-
-## Error Handling
-
-The library provides detailed error information with context:
-
-```go
-response, err := client.Send(message)
-if err != nil {
-    // Errors are wrapped with context
-    fmt.Printf("Send failed: %v\n", err)
-    
-    // You can unwrap to get the root cause if needed
-    if rootErr := errors.Unwrap(err); rootErr != nil {
-        fmt.Printf("Root cause: %v\n", rootErr)
-    }
-}
-```
-
 ## Examples
 
 The repository includes several example implementations:
@@ -356,11 +280,6 @@ The client is thread-safe and can be used concurrently from multiple goroutines.
 
 The **azemailsender-cli** tool provides a command-line interface for the library, enabling:
 
-- **Shell scripting integration** - Easy automation and scripting
-- **Cross-platform support** - Windows, Linux, and macOS binaries
-- **Standard Unix patterns** - Stdin piping, exit codes, JSON output
-- **Configuration management** - Config files and environment variables
-- **Status monitoring** - Check delivery status and wait for completion
 
 ### CLI Examples
 
