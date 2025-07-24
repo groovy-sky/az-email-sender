@@ -280,7 +280,6 @@ func runSend(ctx *simplecli.Context) error {
 		client = azemailsender.NewClient(endpoint, accessKey, clientOptions)
 	}
 	if err != nil {
-		formatter.PrintError(err)
 		return err
 	}
 
@@ -315,7 +314,6 @@ func runSend(ctx *simplecli.Context) error {
 
 	message, err := builder.Build()
 	if err != nil {
-		formatter.PrintError(err)
 		return err
 	}
 
@@ -324,7 +322,6 @@ func runSend(ctx *simplecli.Context) error {
 	// Send email
 	response, err := client.Send(message)
 	if err != nil {
-		formatter.PrintError(err)
 		return err
 	}
 
@@ -371,8 +368,7 @@ func runSend(ctx *simplecli.Context) error {
 
 		finalStatus, err := client.WaitForCompletion(response.ID, waitOptions)
 		if err != nil {
-			formatter.PrintError(fmt.Errorf("waiting for completion failed: %w", err))
-			return err
+			return fmt.Errorf("waiting for completion failed: %w", err)
 		}
 
 		return formatter.PrintStatusResponse(finalStatus)

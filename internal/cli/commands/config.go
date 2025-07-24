@@ -86,8 +86,7 @@ func runConfigInit(ctx *simplecli.Context) error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		formatter.PrintError(fmt.Errorf("failed to create directory %s: %w", dir, err))
-		return err
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Check if file already exists
@@ -97,8 +96,7 @@ func runConfigInit(ctx *simplecli.Context) error {
 
 	// Create default configuration file
 	if err := simpleconfig.SaveDefaultConfig(path); err != nil {
-		formatter.PrintError(fmt.Errorf("failed to create configuration file: %w", err))
-		return err
+		return fmt.Errorf("failed to create configuration file: %w", err)
 	}
 
 	return formatter.PrintSuccess("Configuration file created at %s", path)
@@ -115,8 +113,7 @@ func runConfigShow(ctx *simplecli.Context) error {
 	configFile := ctx.GetString("config")
 	cfg, err := simpleconfig.LoadConfig(configFile, ctx.Flags)
 	if err != nil {
-		formatter.PrintError(fmt.Errorf("failed to load configuration: %w", err))
-		return err
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	// Hide sensitive data for display
